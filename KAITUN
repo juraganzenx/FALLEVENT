@@ -1,4 +1,4 @@
---v8
+--v9
 -- AUTO KAITUN
 --==================================================
 -- AUTO BUY
@@ -7,6 +7,9 @@
 -- SMART SHOVEL
 -- AUTO PLANT
 -- AUTO EXPAND GARDEN
+--
+-- PLANT SYSTEM:
+-- RANDOM RADIUS = 4 STUD
 --
 -- MAX PLANTS BERDASARKAN LEVEL:
 -- LEVEL 1 = 200
@@ -118,6 +121,21 @@ local MAIN_LOOP_DELAY = 0.5
 local EXPAND_CHECK_DELAY = 2
 
 local MAX_LEVEL = 3
+
+
+--==================================================
+-- PLANT RADIUS CONFIG
+--==================================================
+
+local RADIUS = 4
+
+local MAX_HEIGHT = 3
+
+local MIN_DISTANCE = 0.1
+
+local MAX_ATTEMPTS = 10000
+
+local UsedPositions = {}
 
 
 --==================================================
@@ -1075,10 +1093,6 @@ end
 
 --==================================================
 -- HARVEST BAMBOO / MUSHROOM
---
--- IMPORTANT:
--- Mutation WAJIB ada
--- Mutation dicek langsung di PLANT
 --==================================================
 
 local function HarvestOneTimePlant(
@@ -1096,10 +1110,6 @@ local function HarvestOneTimePlant(
         )
 
 
-    --==================================================
-    -- HARUS BAMBOO / MUSHROOM
-    --==================================================
-
     if not ONE_TIME_PLANTS[
         SeedName
     ] then
@@ -1109,20 +1119,11 @@ local function HarvestOneTimePlant(
     end
 
 
-    --==================================================
-    -- CEK MUTATION DI PLANT
-    --==================================================
-
     local Mutation =
         Plant:GetAttribute(
             "Mutation"
         )
 
-
-    --==================================================
-    -- TIDAK ADA MUTATION
-    -- JANGAN HARVEST / CABUT
-    --==================================================
 
     if not Mutation then
 
@@ -1130,11 +1131,6 @@ local function HarvestOneTimePlant(
 
     end
 
-
-    --==================================================
-    -- ADA MUTATION
-    -- BOLEH HARVEST
-    --==================================================
 
     return FireHarvestPrompt(
         Plant
@@ -1151,11 +1147,6 @@ local function GetFruitName(
     Fruit
 )
 
-    --==================================================
-    -- PRIORITAS 1:
-    -- SeedName
-    --==================================================
-
     local SeedName =
         Fruit:GetAttribute(
             "SeedName"
@@ -1168,11 +1159,6 @@ local function GetFruitName(
         )
     end
 
-
-    --==================================================
-    -- PRIORITAS 2:
-    -- FruitName
-    --==================================================
 
     local FruitName =
         Fruit:GetAttribute(
@@ -1187,11 +1173,6 @@ local function GetFruitName(
     end
 
 
-    --==================================================
-    -- PRIORITAS 3:
-    -- Object Name
-    --==================================================
-
     return tostring(
         Fruit.Name
     )
@@ -1201,12 +1182,6 @@ end
 
 --==================================================
 -- HARVEST FRUIT
---
--- ACORN:
--- Mutation WAJIB ada
---
--- FRUIT LAIN:
--- Tidak perlu mutation
 --==================================================
 
 local function HarvestFruit(
@@ -1217,10 +1192,6 @@ local function HarvestFruit(
         return false
     end
 
-
-    --==================================================
-    -- BLACKLIST
-    --==================================================
 
     local CorePartName =
         Fruit:GetAttribute(
@@ -1237,10 +1208,6 @@ local function HarvestFruit(
     end
 
 
-    --==================================================
-    -- GET FRUIT NAME
-    --==================================================
-
     local FruitName =
         GetFruitName(
             Fruit
@@ -1248,7 +1215,7 @@ local function HarvestFruit(
 
 
     --==================================================
-    -- ACORN
+    -- ACORN REQUIRE MUTATION
     --==================================================
 
     if MUTATION_REQUIRED_FRUITS[
@@ -1261,11 +1228,6 @@ local function HarvestFruit(
             )
 
 
-        --==================================================
-        -- ACORN BELUM MUTATION
-        -- JANGAN HARVEST
-        --==================================================
-
         if not Mutation then
 
             return false
@@ -1274,10 +1236,6 @@ local function HarvestFruit(
 
     end
 
-
-    --==================================================
-    -- FRUIT BOLEH DIHARVEST
-    --==================================================
 
     return FireHarvestPrompt(
         Fruit
@@ -1307,9 +1265,6 @@ local function HarvestPlant(
 
     --==================================================
     -- BAMBOO / MUSHROOM
-    --
-    -- JANGAN PERNAH harvest Plant
-    -- jika Mutation belum ada
     --==================================================
 
     if ONE_TIME_PLANTS[
@@ -1743,6 +1698,171 @@ end
 
 
 --==================================================
+-- GET NEXT RADIUS PLANT POSITION
+--==================================================
+
+local function GetNextPlantPosition()
+
+    local BottomFace =
+        GetBottomFace()
+
+
+    if not BottomFace then
+        return nil
+    end
+
+
+    for _ = 1, MAX_ATTEMPTS do
+
+        --==================================================
+        -- RANDOM ANGLE
+        --==================================================
+
+        local Angle =
+            math.random()
+            * math.pi
+            * 2
+
+
+        --==================================================
+        -- RANDOM RADIUS
+        --
+        -- sqrt membuat distribusi lebih merata
+        --==================================================
+
+        local RandomRadius =
+            math.sqrt(
+                math.random()
+            )
+            * RADIUS
+
+
+        --==================================================
+        -- RANDOM HEIGHT
+        --==================================================
+
+        local Height =
+            math.random()
+            * MAX_HEIGHT
+
+
+        --==================================================
+        -- LOCAL POSITION
+        --==================================================
+
+        local LocalPos =
+            Vector3.new(
+
+                math.cos(Angle)
+                    * RandomRadius,
+
+                Height,
+
+                math.sin(Angle)
+                    * RandomRadius
+
+            )
+
+
+        --==================================================
+        -- WORLD POSITION
+        --==================================================
+
+        local WorldPos =
+            BottomFace.CFrame:
+                PointToWorldSpace(
+                    LocalPos
+                )
+
+
+        --==================================================
+        -- CHECK DISTANCE
+        --==================================================
+
+        local Valid = true
+
+
+        for _, Pos in ipairs(
+            UsedPositions
+        ) do
+
+            if (
+                Pos - WorldPos
+            ).Magnitude
+                < MIN_DISTANCE then
+
+                Valid = false
+
+                break
+
+            end
+
+        end
+
+
+        --==================================================
+        -- POSITION VALID
+        --==================================================
+
+        if Valid then
+
+            table.insert(
+                UsedPositions,
+                WorldPos
+            )
+
+
+            --==================================================
+            -- LIMIT MEMORY
+            --==================================================
+
+            if #UsedPositions > 1000 then
+
+                table.remove(
+                    UsedPositions,
+                    1
+                )
+
+            end
+
+
+            return WorldPos
+
+        end
+
+    end
+
+
+    --==================================================
+    -- FALLBACK
+    --==================================================
+
+    return BottomFace.Position
+        + Vector3.new(
+
+            (
+                math.random()
+                * 2
+                - 1
+            )
+            * RADIUS,
+
+            math.random()
+                * MAX_HEIGHT,
+
+            (
+                math.random()
+                * 2
+                - 1
+            )
+            * RADIUS
+
+        )
+
+end
+
+
+--==================================================
 -- PLANT SEED
 --==================================================
 
@@ -1825,44 +1945,22 @@ local function PlantSeed(
     end
 
 
-    local BottomFace =
-        GetBottomFace()
+    --==================================================
+    -- RADIUS POSITION
+    --==================================================
+
+    local PlantPos =
+        GetNextPlantPosition()
 
 
-    if not BottomFace then
+    if not PlantPos then
         return false
     end
 
 
-    local Margin = 0.5
-
-
-    local X =
-        (math.random() - 0.5)
-        * (
-            BottomFace.Size.X
-            - Margin * 2
-        )
-
-
-    local Z =
-        (math.random() - 0.5)
-        * (
-            BottomFace.Size.Z
-            - Margin * 2
-        )
-
-
-    local PlantPos =
-        BottomFace.CFrame:
-            PointToWorldSpace(
-                Vector3.new(
-                    X,
-                    0,
-                    Z
-                )
-            )
-
+    --==================================================
+    -- PLANT
+    --==================================================
 
     local Success =
         pcall(function()
@@ -2261,7 +2359,9 @@ local function PlantPhase()
                 "|",
                 CountPlants(),
                 "/",
-                GetMaxPlants()
+                GetMaxPlants(),
+                "| Radius:",
+                RADIUS
             )
 
 
@@ -2602,6 +2702,18 @@ print(
 
 print(
     "LEVEL 3 MAX PLANTS: 500"
+)
+
+print(
+    "PLANT RADIUS: 4 STUD"
+)
+
+print(
+    "PLANT MIN DISTANCE: 0.1"
+)
+
+print(
+    "PLANT MAX HEIGHT: 3"
 )
 
 print(
