@@ -1,5 +1,5 @@
---v9
--- AUTO KAITUN
+--v10
+-- AUTO KAITUN V9
 --==================================================
 -- AUTO BUY
 -- AUTO HARVEST
@@ -8,13 +8,14 @@
 -- AUTO PLANT
 -- AUTO EXPAND GARDEN
 --
--- PLANT SYSTEM:
--- RANDOM RADIUS = 4 STUD
---
--- MAX PLANTS BERDASARKAN LEVEL:
+-- MAX PLANTS:
 -- LEVEL 1 = 200
 -- LEVEL 2 = 300
 -- LEVEL 3 = 500
+--
+-- PLANT POSITION:
+-- RANDOM RADIUS = 4
+-- RANDOM HEIGHT = 0 - 3
 --
 -- MUTATION REQUIRED:
 -- Maple Bamboo   -> Mutation di PLANT
@@ -124,18 +125,12 @@ local MAX_LEVEL = 3
 
 
 --==================================================
--- PLANT RADIUS CONFIG
+-- PLANT POSITION CONFIG
 --==================================================
 
-local RADIUS = 4
+local PLANT_RADIUS = 4
 
-local MAX_HEIGHT = 3
-
-local MIN_DISTANCE = 0.1
-
-local MAX_ATTEMPTS = 10000
-
-local UsedPositions = {}
+local PLANT_MAX_HEIGHT = 3
 
 
 --==================================================
@@ -315,10 +310,6 @@ local SEED_RARITY = {
 
 --==================================================
 -- ONE TIME PLANTS
---
--- Bamboo dan Mushroom:
--- 1x cabut
--- Mutation dicek di PLANT
 --==================================================
 
 local ONE_TIME_PLANTS = {
@@ -332,9 +323,6 @@ local ONE_TIME_PLANTS = {
 
 --==================================================
 -- MUTATION REQUIRED FRUITS
---
--- Acorn adalah Fruit
--- Mutation dicek di FRUIT
 --==================================================
 
 local MUTATION_REQUIRED_FRUITS = {
@@ -486,10 +474,6 @@ local function GetPlotLevel(
         )
 
 
-    --==================================================
-    -- LEVEL 1
-    --==================================================
-
     if FrontCount == 2
         and BedCount == 0 then
 
@@ -498,10 +482,6 @@ local function GetPlotLevel(
     end
 
 
-    --==================================================
-    -- LEVEL 2
-    --==================================================
-
     if FrontCount == 2
         and BedCount == 2 then
 
@@ -509,10 +489,6 @@ local function GetPlotLevel(
 
     end
 
-
-    --==================================================
-    -- LEVEL 3
-    --==================================================
 
     if FrontCount == 2
         and BedCount == 4 then
@@ -1214,10 +1190,6 @@ local function HarvestFruit(
         )
 
 
-    --==================================================
-    -- ACORN REQUIRE MUTATION
-    --==================================================
-
     if MUTATION_REQUIRED_FRUITS[
         FruitName
     ] then
@@ -1263,10 +1235,6 @@ local function HarvestPlant(
         )
 
 
-    --==================================================
-    -- BAMBOO / MUSHROOM
-    --==================================================
-
     if ONE_TIME_PLANTS[
         SeedName
     ] then
@@ -1280,18 +1248,10 @@ local function HarvestPlant(
     end
 
 
-    --==================================================
-    -- NORMAL PLANT
-    --==================================================
-
     FireHarvestPrompt(
         Plant
     )
 
-
-    --==================================================
-    -- FRUITS
-    --==================================================
 
     local Fruits =
         Plant:FindFirstChild(
@@ -1698,7 +1658,19 @@ end
 
 
 --==================================================
--- GET NEXT RADIUS PLANT POSITION
+-- GET RANDOM RADIUS POSITION
+--==================================================
+--
+-- Radius:
+--     0 -> PLANT_RADIUS
+--
+-- Height:
+--     0 -> PLANT_MAX_HEIGHT
+--
+-- Tidak menggunakan MAX_ATTEMPTS
+-- Tidak menggunakan UsedPositions
+--
+-- Setiap seed mendapat posisi random sendiri.
 --==================================================
 
 local function GetNextPlantPosition()
@@ -1712,152 +1684,48 @@ local function GetNextPlantPosition()
     end
 
 
-    for _ = 1, MAX_ATTEMPTS do
+    local Angle =
+        math.random()
+        * math.pi
+        * 2
 
-        --==================================================
-        -- RANDOM ANGLE
-        --==================================================
 
-        local Angle =
+    -- sqrt membuat distribusi lebih merata
+    -- di seluruh area lingkaran
+    local Radius =
+        math.sqrt(
             math.random()
-            * math.pi
-            * 2
+        )
+        * PLANT_RADIUS
 
 
-        --==================================================
-        -- RANDOM RADIUS
-        --
-        -- sqrt membuat distribusi lebih merata
-        --==================================================
-
-        local RandomRadius =
-            math.sqrt(
-                math.random()
-            )
-            * RADIUS
+    local Height =
+        math.random()
+        * PLANT_MAX_HEIGHT
 
 
-        --==================================================
-        -- RANDOM HEIGHT
-        --==================================================
+    local LocalPosition =
+        Vector3.new(
 
-        local Height =
-            math.random()
-            * MAX_HEIGHT
+            math.cos(Angle)
+            * Radius,
 
+            Height,
 
-        --==================================================
-        -- LOCAL POSITION
-        --==================================================
-
-        local LocalPos =
-            Vector3.new(
-
-                math.cos(Angle)
-                    * RandomRadius,
-
-                Height,
-
-                math.sin(Angle)
-                    * RandomRadius
-
-            )
-
-
-        --==================================================
-        -- WORLD POSITION
-        --==================================================
-
-        local WorldPos =
-            BottomFace.CFrame:
-                PointToWorldSpace(
-                    LocalPos
-                )
-
-
-        --==================================================
-        -- CHECK DISTANCE
-        --==================================================
-
-        local Valid = true
-
-
-        for _, Pos in ipairs(
-            UsedPositions
-        ) do
-
-            if (
-                Pos - WorldPos
-            ).Magnitude
-                < MIN_DISTANCE then
-
-                Valid = false
-
-                break
-
-            end
-
-        end
-
-
-        --==================================================
-        -- POSITION VALID
-        --==================================================
-
-        if Valid then
-
-            table.insert(
-                UsedPositions,
-                WorldPos
-            )
-
-
-            --==================================================
-            -- LIMIT MEMORY
-            --==================================================
-
-            if #UsedPositions > 1000 then
-
-                table.remove(
-                    UsedPositions,
-                    1
-                )
-
-            end
-
-
-            return WorldPos
-
-        end
-
-    end
-
-
-    --==================================================
-    -- FALLBACK
-    --==================================================
-
-    return BottomFace.Position
-        + Vector3.new(
-
-            (
-                math.random()
-                * 2
-                - 1
-            )
-            * RADIUS,
-
-            math.random()
-                * MAX_HEIGHT,
-
-            (
-                math.random()
-                * 2
-                - 1
-            )
-            * RADIUS
+            math.sin(Angle)
+            * Radius
 
         )
+
+
+    local WorldPosition =
+        BottomFace.CFrame:
+            PointToWorldSpace(
+                LocalPosition
+            )
+
+
+    return WorldPosition
 
 end
 
@@ -1923,6 +1791,10 @@ local function PlantSeed(
     end
 
 
+    --==================================================
+    -- EQUIP SEED
+    --==================================================
+
     if Tool.Parent ~= Character then
 
         Tool.Parent =
@@ -1946,7 +1818,7 @@ local function PlantSeed(
 
 
     --==================================================
-    -- RADIUS POSITION
+    -- RANDOM RADIUS POSITION
     --==================================================
 
     local PlantPos =
@@ -2034,10 +1906,6 @@ local function ShovelPhase(
         return
     end
 
-
-    --==================================================
-    -- DYNAMIC MAX PLANTS
-    --==================================================
 
     local MAX_PLANTS =
         GetMaxPlants()
@@ -2288,11 +2156,15 @@ local function PlantPhase()
     )
 
 
+    --==================================================
+    -- TANAM SESUAI JUMLAH SEED
+    --==================================================
+
     for _, SeedData in ipairs(
         ValidSeeds
     ) do
 
-        for i = 1, 100000 do
+        while true do
 
             local CurrentCount =
                 tonumber(
@@ -2303,13 +2175,14 @@ local function PlantPhase()
                 ) or 0
 
 
+            -- Tidak ada seed lagi
             if CurrentCount <= 0 then
                 break
             end
 
 
             --==================================================
-            -- DYNAMIC MAX PLANTS
+            -- CEK SLOT
             --==================================================
 
             local MAX_PLANTS =
@@ -2330,10 +2203,16 @@ local function PlantPhase()
                     MAX_PLANTS
                 )
 
-                break
+                UnequipTool()
+
+                return
 
             end
 
+
+            --==================================================
+            -- PLANT
+            --==================================================
 
             local Success =
                 PlantSeed(
@@ -2357,11 +2236,9 @@ local function PlantPhase()
                 "🌱 Plant:",
                 SeedData.SeedName,
                 "|",
-                CountPlants(),
+                CurrentPlants + 1,
                 "/",
-                GetMaxPlants(),
-                "| Radius:",
-                RADIUS
+                GetMaxPlants()
             )
 
 
@@ -2531,10 +2408,6 @@ local function TryExpand()
     )
 
 
-    --==================================================
-    -- MAX LEVEL
-    --==================================================
-
     if Level >= MAX_LEVEL then
 
         print(
@@ -2546,10 +2419,6 @@ local function TryExpand()
 
     end
 
-
-    --==================================================
-    -- NEXT LEVEL
-    --==================================================
 
     local NextLevel =
         Level + 1
@@ -2579,10 +2448,6 @@ local function TryExpand()
     )
 
 
-    --==================================================
-    -- LEAVES CHECK
-    --==================================================
-
     if Leaves < RequiredLeaves then
 
         print(
@@ -2600,10 +2465,6 @@ local function TryExpand()
 
     end
 
-
-    --==================================================
-    -- EXPAND
-    --==================================================
 
     print(
         "[AUTO EXPAND] Requirement terpenuhi!"
@@ -2705,15 +2566,11 @@ print(
 )
 
 print(
-    "PLANT RADIUS: 4 STUD"
+    "PLANT RADIUS: 4"
 )
 
 print(
-    "PLANT MIN DISTANCE: 0.1"
-)
-
-print(
-    "PLANT MAX HEIGHT: 3"
+    "PLANT HEIGHT: 0 - 3"
 )
 
 print(
