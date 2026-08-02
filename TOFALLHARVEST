@@ -1,0 +1,10 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local Networking = require(ReplicatedStorage.SharedModules.Networking)
+
+if game.PlaceId == 97598239454123 then
+    task.wait(1)
+    Networking.Worlds.RequestTravel:Fire("FallHarvest")
+end
