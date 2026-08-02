@@ -1,25 +1,20 @@
 --==================================================
--- 🌱 GARDEN PLANT COUNTER
--- Menggunakan Attribute: SeedName
+-- 🌱 GARDEN PLANT COUNTERv2
+-- SeedName Based
+-- Compact / Draggable / Minimize
 --==================================================
 
 local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
-
---==================================================
--- SETTINGS
---==================================================
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local REFRESH_DELAY = 2
 
 --==================================================
--- WAIT PLAYER GUI
+-- REMOVE OLD GUI
 --==================================================
 
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
--- Hapus GUI lama jika ada
 local OldGui = PlayerGui:FindFirstChild("GardenPlantCounter")
 
 if OldGui then
@@ -68,22 +63,55 @@ ScreenGui.Parent = PlayerGui
 local Main = Instance.new("Frame")
 
 Main.Name = "Main"
-Main.Size = UDim2.new(0, 300, 0, 420)
-Main.Position = UDim2.new(0, 20, 0.5, -210)
+
+Main.Size = UDim2.new(0, 220, 0, 300)
+
+-- POJOK KANAN ATAS
+Main.AnchorPoint = Vector2.new(1, 0)
+
+Main.Position = UDim2.new(1, -15, 0, 15)
 
 Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+
 Main.BorderSizePixel = 0
 
 Main.Parent = ScreenGui
 
 --==================================================
--- MAIN CORNER
+-- CORNER
 --==================================================
 
 local MainCorner = Instance.new("UICorner")
 
-MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.CornerRadius = UDim.new(0, 8)
+
 MainCorner.Parent = Main
+
+--==================================================
+-- HEADER
+--==================================================
+
+local Header = Instance.new("Frame")
+
+Header.Name = "Header"
+
+Header.Size = UDim2.new(1, 0, 0, 32)
+
+Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+
+Header.BorderSizePixel = 0
+
+Header.Parent = Main
+
+--==================================================
+-- HEADER CORNER
+--==================================================
+
+local HeaderCorner = Instance.new("UICorner")
+
+HeaderCorner.CornerRadius = UDim.new(0, 8)
+
+HeaderCorner.Parent = Header
 
 --==================================================
 -- TITLE
@@ -91,45 +119,87 @@ MainCorner.Parent = Main
 
 local Title = Instance.new("TextLabel")
 
-Title.Name = "Title"
+Title.Size = UDim2.new(1, -40, 1, 0)
 
-Title.Size = UDim2.new(1, -20, 0, 40)
-Title.Position = UDim2.new(0, 10, 0, 5)
+Title.Position = UDim2.new(0, 8, 0, 0)
 
 Title.BackgroundTransparency = 1
 
-Title.Text = "🌱 MY GARDEN PLANTS"
+Title.Text = "🌱 Garden"
 
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 20
+
+Title.TextSize = 14
+
 Title.Font = Enum.Font.GothamBold
 
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
-Title.Parent = Main
+Title.Parent = Header
 
 --==================================================
--- GARDEN STATUS
+-- MINIMIZE BUTTON
+--==================================================
+
+local MinimizeButton = Instance.new("TextButton")
+
+MinimizeButton.Name = "Minimize"
+
+MinimizeButton.Size = UDim2.new(0, 28, 0, 28)
+
+MinimizeButton.Position = UDim2.new(1, -30, 0, 2)
+
+MinimizeButton.BackgroundTransparency = 1
+
+MinimizeButton.Text = "−"
+
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+MinimizeButton.TextSize = 20
+
+MinimizeButton.Font = Enum.Font.GothamBold
+
+MinimizeButton.Parent = Header
+
+--==================================================
+-- CONTENT
+--==================================================
+
+local Content = Instance.new("Frame")
+
+Content.Name = "Content"
+
+Content.Size = UDim2.new(1, 0, 1, -32)
+
+Content.Position = UDim2.new(0, 0, 0, 32)
+
+Content.BackgroundTransparency = 1
+
+Content.Parent = Main
+
+--==================================================
+-- STATUS
 --==================================================
 
 local StatusLabel = Instance.new("TextLabel")
 
-StatusLabel.Name = "Status"
+StatusLabel.Size = UDim2.new(1, -16, 0, 20)
 
-StatusLabel.Size = UDim2.new(1, -20, 0, 25)
-StatusLabel.Position = UDim2.new(0, 10, 0, 45)
+StatusLabel.Position = UDim2.new(0, 8, 0, 4)
 
 StatusLabel.BackgroundTransparency = 1
 
 StatusLabel.Text = "Mencari garden..."
 
-StatusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-StatusLabel.TextSize = 14
+StatusLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+
+StatusLabel.TextSize = 11
+
 StatusLabel.Font = Enum.Font.Gotham
 
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-StatusLabel.Parent = Main
+StatusLabel.Parent = Content
 
 --==================================================
 -- TOTAL
@@ -137,47 +207,47 @@ StatusLabel.Parent = Main
 
 local TotalLabel = Instance.new("TextLabel")
 
-TotalLabel.Name = "Total"
+TotalLabel.Size = UDim2.new(1, -16, 0, 22)
 
-TotalLabel.Size = UDim2.new(1, -20, 0, 30)
-TotalLabel.Position = UDim2.new(0, 10, 0, 70)
+TotalLabel.Position = UDim2.new(0, 8, 0, 23)
 
 TotalLabel.BackgroundTransparency = 1
 
-TotalLabel.Text = "Total Plant = 0"
+TotalLabel.Text = "Total: 0"
 
 TotalLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-TotalLabel.TextSize = 17
+
+TotalLabel.TextSize = 13
+
 TotalLabel.Font = Enum.Font.GothamBold
 
 TotalLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-TotalLabel.Parent = Main
+TotalLabel.Parent = Content
 
 --==================================================
--- SCROLL FRAME
+-- SCROLL
 --==================================================
 
 local Scroll = Instance.new("ScrollingFrame")
 
 Scroll.Name = "PlantList"
 
-Scroll.Size = UDim2.new(1, -20, 1, -115)
-Scroll.Position = UDim2.new(0, 10, 0, 110)
+Scroll.Size = UDim2.new(1, -16, 1, -52)
 
-Scroll.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Scroll.Position = UDim2.new(0, 8, 0, 48)
+
+Scroll.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
 
 Scroll.BorderSizePixel = 0
 
-Scroll.ScrollBarThickness = 5
-
-Scroll.ScrollBarImageTransparency = 0.2
+Scroll.ScrollBarThickness = 3
 
 Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 
 Scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
-Scroll.Parent = Main
+Scroll.Parent = Content
 
 --==================================================
 -- SCROLL CORNER
@@ -185,7 +255,7 @@ Scroll.Parent = Main
 
 local ScrollCorner = Instance.new("UICorner")
 
-ScrollCorner.CornerRadius = UDim.new(0, 8)
+ScrollCorner.CornerRadius = UDim.new(0, 6)
 
 ScrollCorner.Parent = Scroll
 
@@ -195,28 +265,30 @@ ScrollCorner.Parent = Scroll
 
 local Padding = Instance.new("UIPadding")
 
-Padding.PaddingTop = UDim.new(0, 5)
-Padding.PaddingBottom = UDim.new(0, 5)
+Padding.PaddingTop = UDim.new(0, 3)
+
+Padding.PaddingBottom = UDim.new(0, 3)
+
 Padding.PaddingLeft = UDim.new(0, 5)
+
 Padding.PaddingRight = UDim.new(0, 5)
 
 Padding.Parent = Scroll
 
 --==================================================
--- LIST LAYOUT
+-- LAYOUT
 --==================================================
 
 local Layout = Instance.new("UIListLayout")
 
-Layout.Padding = UDim.new(0, 2)
+Layout.Padding = UDim.new(0, 1)
 
 Layout.SortOrder = Enum.SortOrder.Name
 
 Layout.Parent = Scroll
 
 --==================================================
--- GET PLANT NAME
--- HANYA DARI ATTRIBUTE SeedName
+-- GET SEED NAME
 --==================================================
 
 local function GetPlantName(Object)
@@ -247,7 +319,7 @@ local function ClearList()
 end
 
 --==================================================
--- CREATE PLANT ROW
+-- CREATE ROW
 --==================================================
 
 local function CreatePlantRow(Name, Count)
@@ -256,15 +328,15 @@ local function CreatePlantRow(Name, Count)
 
     Row.Name = "Plant_" .. Name
 
-    Row.Size = UDim2.new(1, 0, 0, 30)
+    Row.Size = UDim2.new(1, 0, 0, 22)
 
     Row.BackgroundTransparency = 1
 
     Row.Text = Name .. " = " .. tostring(Count)
 
-    Row.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Row.TextColor3 = Color3.fromRGB(235, 235, 235)
 
-    Row.TextSize = 16
+    Row.TextSize = 12
 
     Row.Font = Enum.Font.Gotham
 
@@ -275,7 +347,7 @@ local function CreatePlantRow(Name, Count)
 end
 
 --==================================================
--- UPDATE PLANTS
+-- UPDATE
 --==================================================
 
 local function UpdatePlants()
@@ -286,25 +358,21 @@ local function UpdatePlants()
 
         StatusLabel.Text = "Garden tidak ditemukan"
 
-        TotalLabel.Text = "Total Plant = 0"
+        TotalLabel.Text = "Total: 0"
 
         ClearList()
 
         return
     end
 
-    StatusLabel.Text = "Garden: " .. Plot.Name
-
-    --==============================================
-    -- TABLE PLANT
-    --==============================================
+    StatusLabel.Text = Plot.Name
 
     local Plants = {}
 
     local Total = 0
 
     --==============================================
-    -- SCAN DESCENDANTS
+    -- SCAN
     --==============================================
 
     for _, Object in ipairs(Plot:GetDescendants()) do
@@ -322,7 +390,7 @@ local function UpdatePlants()
     end
 
     --==============================================
-    -- CLEAR OLD GUI
+    -- CLEAR
     --==============================================
 
     ClearList()
@@ -331,29 +399,29 @@ local function UpdatePlants()
     -- TOTAL
     --==============================================
 
-    TotalLabel.Text = "Total Plant = " .. tostring(Total)
+    TotalLabel.Text = "Total: " .. tostring(Total)
 
     --==============================================
-    -- SORT NAME
+    -- SORT
     --==============================================
 
-    local PlantNames = {}
+    local Names = {}
 
     for Name in pairs(Plants) do
-        table.insert(PlantNames, Name)
+        table.insert(Names, Name)
     end
 
-    table.sort(PlantNames, function(A, B)
+    table.sort(Names, function(A, B)
 
         return A:lower() < B:lower()
 
     end)
 
     --==============================================
-    -- CREATE ROW
+    -- DISPLAY
     --==============================================
 
-    for _, Name in ipairs(PlantNames) do
+    for _, Name in ipairs(Names) do
 
         CreatePlantRow(
             Name,
@@ -365,19 +433,119 @@ local function UpdatePlants()
 end
 
 --==================================================
--- INITIAL UPDATE
+-- MINIMIZE
+--==================================================
+
+local IsMinimized = false
+
+local NormalSize = UDim2.new(0, 220, 0, 300)
+
+local MinimizedSize = UDim2.new(0, 220, 0, 32)
+
+MinimizeButton.MouseButton1Click:Connect(function()
+
+    IsMinimized = not IsMinimized
+
+    if IsMinimized then
+
+        Content.Visible = false
+
+        Main.Size = MinimizedSize
+
+        MinimizeButton.Text = "+"
+
+    else
+
+        Content.Visible = true
+
+        Main.Size = NormalSize
+
+        MinimizeButton.Text = "−"
+
+    end
+
+end)
+
+--==================================================
+-- DRAG SYSTEM
+--==================================================
+
+local UserInputService = game:GetService("UserInputService")
+
+local Dragging = false
+
+local DragStart
+
+local StartPosition
+
+Header.InputBegan:Connect(function(Input)
+
+    if Input.UserInputType == Enum.UserInputType.MouseButton1
+        or Input.UserInputType == Enum.UserInputType.Touch then
+
+        Dragging = true
+
+        DragStart = Input.Position
+
+        StartPosition = Main.Position
+
+        Input.Changed:Connect(function()
+
+            if Input.UserInputState == Enum.UserInputState.End then
+
+                Dragging = false
+
+            end
+
+        end)
+
+    end
+
+end)
+
+UserInputService.InputChanged:Connect(function(Input)
+
+    if not Dragging then
+        return
+    end
+
+    if Input.UserInputType ~= Enum.UserInputType.MouseMovement
+        and Input.UserInputType ~= Enum.UserInputType.Touch then
+
+        return
+    end
+
+    local Delta = Input.Position - DragStart
+
+    Main.Position = UDim2.new(
+        StartPosition.X.Scale,
+        StartPosition.X.Offset + Delta.X,
+        StartPosition.Y.Scale,
+        StartPosition.Y.Offset + Delta.Y
+    )
+
+end)
+
+--==================================================
+-- UPDATE LOOP
 --==================================================
 
 task.spawn(function()
 
-    while true do
+    while task.wait(REFRESH_DELAY) do
 
         pcall(function()
             UpdatePlants()
         end)
 
-        task.wait(REFRESH_DELAY)
-
     end
 
 end)
+
+--==================================================
+-- FIRST UPDATE
+--==================================================
+
+task.wait(0.5)
+
+UpdatePlants()
