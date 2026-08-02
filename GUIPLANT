@@ -1,0 +1,383 @@
+--==================================================
+-- 🌱 GARDEN PLANT COUNTER
+-- Menggunakan Attribute: SeedName
+--==================================================
+
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local REFRESH_DELAY = 2
+
+--==================================================
+-- WAIT PLAYER GUI
+--==================================================
+
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Hapus GUI lama jika ada
+local OldGui = PlayerGui:FindFirstChild("GardenPlantCounter")
+
+if OldGui then
+    OldGui:Destroy()
+end
+
+--==================================================
+-- FIND MY PLOT
+--==================================================
+
+local function GetMyPlot()
+
+    local Gardens = workspace:FindFirstChild("Gardens")
+
+    if not Gardens then
+        return nil
+    end
+
+    for _, Plot in ipairs(Gardens:GetChildren()) do
+
+        if Plot:GetAttribute("Owner") == LocalPlayer.Name then
+            return Plot
+        end
+
+    end
+
+    return nil
+end
+
+--==================================================
+-- GUI
+--==================================================
+
+local ScreenGui = Instance.new("ScreenGui")
+
+ScreenGui.Name = "GardenPlantCounter"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+ScreenGui.Parent = PlayerGui
+
+--==================================================
+-- MAIN
+--==================================================
+
+local Main = Instance.new("Frame")
+
+Main.Name = "Main"
+Main.Size = UDim2.new(0, 300, 0, 420)
+Main.Position = UDim2.new(0, 20, 0.5, -210)
+
+Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Main.BorderSizePixel = 0
+
+Main.Parent = ScreenGui
+
+--==================================================
+-- MAIN CORNER
+--==================================================
+
+local MainCorner = Instance.new("UICorner")
+
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = Main
+
+--==================================================
+-- TITLE
+--==================================================
+
+local Title = Instance.new("TextLabel")
+
+Title.Name = "Title"
+
+Title.Size = UDim2.new(1, -20, 0, 40)
+Title.Position = UDim2.new(0, 10, 0, 5)
+
+Title.BackgroundTransparency = 1
+
+Title.Text = "🌱 MY GARDEN PLANTS"
+
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 20
+Title.Font = Enum.Font.GothamBold
+
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+Title.Parent = Main
+
+--==================================================
+-- GARDEN STATUS
+--==================================================
+
+local StatusLabel = Instance.new("TextLabel")
+
+StatusLabel.Name = "Status"
+
+StatusLabel.Size = UDim2.new(1, -20, 0, 25)
+StatusLabel.Position = UDim2.new(0, 10, 0, 45)
+
+StatusLabel.BackgroundTransparency = 1
+
+StatusLabel.Text = "Mencari garden..."
+
+StatusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+StatusLabel.TextSize = 14
+StatusLabel.Font = Enum.Font.Gotham
+
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+StatusLabel.Parent = Main
+
+--==================================================
+-- TOTAL
+--==================================================
+
+local TotalLabel = Instance.new("TextLabel")
+
+TotalLabel.Name = "Total"
+
+TotalLabel.Size = UDim2.new(1, -20, 0, 30)
+TotalLabel.Position = UDim2.new(0, 10, 0, 70)
+
+TotalLabel.BackgroundTransparency = 1
+
+TotalLabel.Text = "Total Plant = 0"
+
+TotalLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+TotalLabel.TextSize = 17
+TotalLabel.Font = Enum.Font.GothamBold
+
+TotalLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+TotalLabel.Parent = Main
+
+--==================================================
+-- SCROLL FRAME
+--==================================================
+
+local Scroll = Instance.new("ScrollingFrame")
+
+Scroll.Name = "PlantList"
+
+Scroll.Size = UDim2.new(1, -20, 1, -115)
+Scroll.Position = UDim2.new(0, 10, 0, 110)
+
+Scroll.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+
+Scroll.BorderSizePixel = 0
+
+Scroll.ScrollBarThickness = 5
+
+Scroll.ScrollBarImageTransparency = 0.2
+
+Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+Scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+
+Scroll.Parent = Main
+
+--==================================================
+-- SCROLL CORNER
+--==================================================
+
+local ScrollCorner = Instance.new("UICorner")
+
+ScrollCorner.CornerRadius = UDim.new(0, 8)
+
+ScrollCorner.Parent = Scroll
+
+--==================================================
+-- PADDING
+--==================================================
+
+local Padding = Instance.new("UIPadding")
+
+Padding.PaddingTop = UDim.new(0, 5)
+Padding.PaddingBottom = UDim.new(0, 5)
+Padding.PaddingLeft = UDim.new(0, 5)
+Padding.PaddingRight = UDim.new(0, 5)
+
+Padding.Parent = Scroll
+
+--==================================================
+-- LIST LAYOUT
+--==================================================
+
+local Layout = Instance.new("UIListLayout")
+
+Layout.Padding = UDim.new(0, 2)
+
+Layout.SortOrder = Enum.SortOrder.Name
+
+Layout.Parent = Scroll
+
+--==================================================
+-- GET PLANT NAME
+-- HANYA DARI ATTRIBUTE SeedName
+--==================================================
+
+local function GetPlantName(Object)
+
+    local SeedName = Object:GetAttribute("SeedName")
+
+    if typeof(SeedName) == "string" and SeedName ~= "" then
+        return SeedName
+    end
+
+    return nil
+end
+
+--==================================================
+-- CLEAR LIST
+--==================================================
+
+local function ClearList()
+
+    for _, Child in ipairs(Scroll:GetChildren()) do
+
+        if Child:IsA("TextLabel") then
+            Child:Destroy()
+        end
+
+    end
+
+end
+
+--==================================================
+-- CREATE PLANT ROW
+--==================================================
+
+local function CreatePlantRow(Name, Count)
+
+    local Row = Instance.new("TextLabel")
+
+    Row.Name = "Plant_" .. Name
+
+    Row.Size = UDim2.new(1, 0, 0, 30)
+
+    Row.BackgroundTransparency = 1
+
+    Row.Text = Name .. " = " .. tostring(Count)
+
+    Row.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+    Row.TextSize = 16
+
+    Row.Font = Enum.Font.Gotham
+
+    Row.TextXAlignment = Enum.TextXAlignment.Left
+
+    Row.Parent = Scroll
+
+end
+
+--==================================================
+-- UPDATE PLANTS
+--==================================================
+
+local function UpdatePlants()
+
+    local Plot = GetMyPlot()
+
+    if not Plot then
+
+        StatusLabel.Text = "Garden tidak ditemukan"
+
+        TotalLabel.Text = "Total Plant = 0"
+
+        ClearList()
+
+        return
+    end
+
+    StatusLabel.Text = "Garden: " .. Plot.Name
+
+    --==============================================
+    -- TABLE PLANT
+    --==============================================
+
+    local Plants = {}
+
+    local Total = 0
+
+    --==============================================
+    -- SCAN DESCENDANTS
+    --==============================================
+
+    for _, Object in ipairs(Plot:GetDescendants()) do
+
+        local PlantName = GetPlantName(Object)
+
+        if PlantName then
+
+            Plants[PlantName] = (Plants[PlantName] or 0) + 1
+
+            Total += 1
+
+        end
+
+    end
+
+    --==============================================
+    -- CLEAR OLD GUI
+    --==============================================
+
+    ClearList()
+
+    --==============================================
+    -- TOTAL
+    --==============================================
+
+    TotalLabel.Text = "Total Plant = " .. tostring(Total)
+
+    --==============================================
+    -- SORT NAME
+    --==============================================
+
+    local PlantNames = {}
+
+    for Name in pairs(Plants) do
+        table.insert(PlantNames, Name)
+    end
+
+    table.sort(PlantNames, function(A, B)
+
+        return A:lower() < B:lower()
+
+    end)
+
+    --==============================================
+    -- CREATE ROW
+    --==============================================
+
+    for _, Name in ipairs(PlantNames) do
+
+        CreatePlantRow(
+            Name,
+            Plants[Name]
+        )
+
+    end
+
+end
+
+--==================================================
+-- INITIAL UPDATE
+--==================================================
+
+task.spawn(function()
+
+    while true do
+
+        pcall(function()
+            UpdatePlants()
+        end)
+
+        task.wait(REFRESH_DELAY)
+
+    end
+
+end)
