@@ -1,0 +1,41 @@
+local Gardens = workspace:WaitForChild("Gardens")
+
+local ProtectedParts = {
+    Base = true,
+    HarvestPart = true,
+    Stud_Part = true,
+}
+
+local function CheckPart(Obj)
+    if Obj:IsA("BasePart") and not ProtectedParts[Obj.Name] then
+        Obj:Destroy()
+    end
+end
+
+local function SetupPlants(Plants)
+    -- Destroy yang sudah ada
+    for _, Obj in ipairs(Plants:GetDescendants()) do
+        CheckPart(Obj)
+    end
+
+    -- Destroy Part baru
+    Plants.DescendantAdded:Connect(function(Obj)
+        CheckPart(Obj)
+    end)
+end
+
+-- Semua Plot
+for _, Plot in ipairs(Gardens:GetChildren()) do
+    local Plants = Plot:FindFirstChild("Plants")
+
+    if Plants then
+        SetupPlants(Plants)
+    end
+end
+
+-- Kalau Plants baru dibuat di Plot
+Gardens.DescendantAdded:Connect(function(Obj)
+    if Obj.Name == "Plants" then
+        SetupPlants(Obj)
+    end
+end)
