@@ -1,10 +1,30 @@
 local Players = game:GetService("Players")
 
-local LocalPlayer = Players.LocalPlayer
-
 local Gardens = workspace:WaitForChild("Gardens")
 local Baseplate = workspace:WaitForChild("Baseplate")
 local Map = workspace:WaitForChild("Map")
+
+local LocalPlayer = Players.LocalPlayer
+
+--==================================================
+-- DESTROY DECOR & MIDDLE
+--==================================================
+
+local Decor = Baseplate:FindFirstChild("Decor")
+
+if Decor then
+    Decor:Destroy()
+end
+
+local Middle = Map:FindFirstChild("Middle")
+
+if Middle then
+    Middle:Destroy()
+end
+
+--==================================================
+-- PROTECTED PARTS
+--==================================================
 
 local ProtectedParts = {
     Base = true,
@@ -13,26 +33,16 @@ local ProtectedParts = {
 }
 
 --==================================================
--- DESTROY DECOR & MIDDLE
---==================================================
-
-local Decor = Baseplate:FindFirstChild("Decor")
-if Decor then
-    Decor:Destroy()
-end
-
-local Middle = Map:FindFirstChild("Middle")
-if Middle then
-    Middle:Destroy()
-end
-
---==================================================
--- CEK PLOT
+-- CEK APAKAH PLOT MILIK KITA
 --==================================================
 
 local function IsMyPlot(Plot)
     return Plot:GetAttribute("Owner") == LocalPlayer.Name
 end
+
+--==================================================
+-- DESTROY PART
+--==================================================
 
 local function CheckPart(Obj, IsMine)
     if not Obj:IsA("BasePart") then
@@ -40,43 +50,84 @@ local function CheckPart(Obj, IsMine)
     end
 
     if IsMine then
-        -- Plot kita: aturan awal
+        -- Plot kita:
+        -- Lindungi Base, HarvestPart, Stud_Part
         if not ProtectedParts[Obj.Name] then
             Obj:Destroy()
         end
     else
-        -- Plot orang lain: destroy semua
+        -- Plot orang lain:
+        -- Destroy semua BasePart
         Obj:Destroy()
     end
 end
+
+--==================================================
+-- SETUP PLANTS
+--==================================================
+
+local function SetupPlants(Plot, Plants)
+    if not Plants or not Plants.Parent then
+        return
+    end
+
+    local IsMine = IsMyPlot(Plot)
+
+    --==================================================
+    -- DESTROY YANG SUDAH ADA
+    --==================================================
+
+    for _, Obj in ipairs(Plants:GetDescendants()) do
+        CheckPart(Obj, IsMine)
+    end
+
+    --==================================================
+    -- DESTROY PART BARU
+    --==================================================
+
+    Plants.DescendantAdded:Connect(function(Obj)
+        CheckPart(Obj, IsMine)
+    end)
+end
+
+--==================================================
+-- SETUP PLOT
+--==================================================
 
 local function SetupPlot(Plot)
     if not Plot:IsA("Model") then
         return
     end
 
-    local IsMine = IsMyPlot(Plot)
+    local Plants = Plot:FindFirstChild("Plants")
 
-    -- Destroy yang sudah ada
-    for _, Obj in ipairs(Plot:GetDescendants()) do
-        CheckPart(Obj, IsMine)
+    if Plants then
+        SetupPlants(Plot, Plants)
     end
 
-    -- Destroy Part baru
-    Plot.DescendantAdded:Connect(function(Obj)
-        CheckPart(Obj, IsMine)
+    --==================================================
+    -- KALAU PLANTS BARU DIBUAT
+    --==================================================
+
+    Plot.ChildAdded:Connect(function(Obj)
+        if Obj.Name == "Plants" then
+            SetupPlants(Plot, Obj)
+        end
     end)
 end
 
 --==================================================
--- SEMUA PLOT
+-- SETUP SEMUA PLOT
 --==================================================
 
 for _, Plot in ipairs(Gardens:GetChildren()) do
     SetupPlot(Plot)
 end
 
--- Plot baru
+--==================================================
+-- KALAU PLOT BARU DIBUAT
+--==================================================
+
 Gardens.ChildAdded:Connect(function(Plot)
     SetupPlot(Plot)
 end)
