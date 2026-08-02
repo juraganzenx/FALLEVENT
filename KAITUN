@@ -1,5 +1,6 @@
---v10
--- AUTO KAITUN V9
+--V11
+--==================================================
+-- AUTO KAITUN
 --==================================================
 -- AUTO BUY
 -- AUTO HARVEST
@@ -14,16 +15,14 @@
 -- LEVEL 3 = 500
 --
 -- PLANT POSITION:
--- RANDOM RADIUS = 4
--- RANDOM HEIGHT = 0 - 3
+-- RADIUS RANDOM
+-- SELALU MENGGUNAKAN FRONT_BedSection
+-- YANG PALING DEKAT DENGAN Signs.Expand
 --
--- MUTATION REQUIRED:
+-- MUTATION:
 -- Maple Bamboo   -> Mutation di PLANT
 -- Maple Mushroom -> Mutation di PLANT
 -- Maple Acorn    -> Mutation di FRUIT
---
--- Fruit lainnya:
--- Tetap harvest walaupun tidak ada Mutation
 --==================================================
 
 
@@ -125,12 +124,16 @@ local MAX_LEVEL = 3
 
 
 --==================================================
--- PLANT POSITION CONFIG
+-- RANDOM PLANT CONFIG
 --==================================================
 
-local PLANT_RADIUS = 4
+local RADIUS = 4
 
-local PLANT_MAX_HEIGHT = 3
+local MAX_HEIGHT = 3
+
+local MIN_DISTANCE = 0.1
+
+local UsedPositions = {}
 
 
 --==================================================
@@ -355,19 +358,15 @@ local function GetRarityFromSeedName(
         return nil, 0
     end
 
-
     Name =
         tostring(Name)
-
 
     local Rarity =
         SEED_RARITY[Name]
 
-
     if not Rarity then
         return nil, 0
     end
-
 
     return Rarity,
         RARITY_ORDER[Rarity] or 0
@@ -381,13 +380,39 @@ end
 
 local function GetMyPlot()
 
+    --==================================================
+    -- PRIORITAS PlotId
+    --==================================================
+
+    local PlotId =
+        LocalPlayer:GetAttribute(
+            "PlotId"
+        )
+
+    if PlotId then
+
+        local Plot =
+            Gardens:FindFirstChild(
+                "Plot" .. tostring(PlotId)
+            )
+
+        if Plot then
+            return Plot
+        end
+
+    end
+
+
+    --==================================================
+    -- FALLBACK OWNER
+    --==================================================
+
     for i = 1, 8 do
 
         local Plot =
             Gardens:FindFirstChild(
                 "Plot" .. i
             )
-
 
         if Plot
             and Plot:GetAttribute(
@@ -399,7 +424,6 @@ local function GetMyPlot()
         end
 
     end
-
 
     return nil
 
@@ -417,7 +441,6 @@ local function CountVisualModels(
 
     local Count = 0
 
-
     for _, Obj in ipairs(
         Visual:GetChildren()
     ) do
@@ -429,7 +452,6 @@ local function CountVisualModels(
         end
 
     end
-
 
     return Count
 
@@ -448,24 +470,20 @@ local function GetPlotLevel(
         return 0
     end
 
-
     local Visual =
         Plot:FindFirstChild(
             "Visual"
         )
 
-
     if not Visual then
         return 0
     end
-
 
     local FrontCount =
         CountVisualModels(
             Visual,
             "FRONT_BedSection"
         )
-
 
     local BedCount =
         CountVisualModels(
@@ -512,17 +530,14 @@ local function GetMaxPlants()
     local Plot =
         GetMyPlot()
 
-
     if not Plot then
         return 200
     end
-
 
     local Level =
         GetPlotLevel(
             Plot
         )
-
 
     return PLANT_LIMIT_BY_LEVEL[
         Level
@@ -540,22 +555,18 @@ local function GetPlants()
     local Plot =
         GetMyPlot()
 
-
     if not Plot then
         return {}
     end
-
 
     local Plants =
         Plot:FindFirstChild(
             "Plants"
         )
 
-
     if not Plants then
         return {}
     end
-
 
     return Plants:GetChildren()
 
@@ -584,22 +595,18 @@ local function GetLeaves()
             "leaderstats"
         )
 
-
     if not Leaderstats then
         return nil
     end
-
 
     local Leaves =
         Leaderstats:FindFirstChild(
             "Leaves"
         )
 
-
     if not Leaves then
         return nil
     end
-
 
     return Leaves.Value
 
@@ -637,7 +644,6 @@ local function FormatNumber(
 
     end
 
-
     return tostring(Number)
 
 end
@@ -652,17 +658,14 @@ local function UnequipTool()
     local Character =
         LocalPlayer.Character
 
-
     if not Character then
         return
     end
-
 
     local Humanoid =
         Character:FindFirstChildOfClass(
             "Humanoid"
         )
-
 
     if Humanoid then
 
@@ -686,11 +689,9 @@ local function GetShovel()
     local Character =
         LocalPlayer.Character
 
-
     if not Character then
         return nil
     end
-
 
     for _, Tool in ipairs(
         Character:GetChildren()
@@ -707,7 +708,6 @@ local function GetShovel()
 
     end
 
-
     return nil
 
 end
@@ -722,12 +722,10 @@ local function EquipShovel()
     local Character =
         LocalPlayer.Character
 
-
     local Backpack =
         LocalPlayer:FindFirstChild(
             "Backpack"
         )
-
 
     if not Character
         or not Backpack then
@@ -736,15 +734,12 @@ local function EquipShovel()
 
     end
 
-
     local Shovel =
         GetShovel()
-
 
     if Shovel then
         return Shovel
     end
-
 
     for _, Tool in ipairs(
         Backpack:GetChildren()
@@ -758,16 +753,13 @@ local function EquipShovel()
             Tool.Parent =
                 Character
 
-
             task.wait(0.1)
-
 
             return Tool
 
         end
 
     end
-
 
     return nil
 
@@ -783,15 +775,12 @@ local function GetSeedTools()
     local Character =
         LocalPlayer.Character
 
-
     local Backpack =
         LocalPlayer:FindFirstChild(
             "Backpack"
         )
 
-
     local Result = {}
-
 
     if not Backpack then
         return Result
@@ -810,21 +799,17 @@ local function GetSeedTools()
                 continue
             end
 
-
             local SeedTool =
                 Tool:GetAttribute(
                     "SeedTool"
                 )
 
-
             if not SeedTool then
                 continue
             end
 
-
             local SeedName =
                 Tool.Name
-
 
             local Rarity,
                 RarityValue =
@@ -832,14 +817,12 @@ local function GetSeedTools()
                     SeedName
                 )
 
-
             local Count =
                 tonumber(
                     Tool:GetAttribute(
                         "Count"
                     )
                 ) or 0
-
 
             if Count > 0 then
 
@@ -879,7 +862,6 @@ local function GetSeedTools()
         Backpack
     )
 
-
     if Character then
 
         Scan(
@@ -887,7 +869,6 @@ local function GetSeedTools()
         )
 
     end
-
 
     return Result
 
@@ -903,7 +884,6 @@ local SeedShop =
         WaitForChild(
             "SeedShop"
         )
-
 
 local NormalShop =
     SeedShop.Frame.NormalShop
@@ -922,22 +902,18 @@ local function GetStock(
             "Main_Frame"
         )
 
-
     if not MainFrame then
         return 0
     end
-
 
     local StockText =
         MainFrame:FindFirstChild(
             "Stock_Text"
         )
 
-
     if not StockText then
         return 0
     end
-
 
     local StockAmount =
         tonumber(
@@ -946,7 +922,6 @@ local function GetStock(
                 "x(%d+)"
             )
         )
-
 
     return StockAmount or 0
 
@@ -968,12 +943,10 @@ local function BuyAllSeeds()
             local SeedName =
                 SeedFrame.Name
 
-
             local Stock =
                 GetStock(
                     SeedFrame
                 )
-
 
             if Stock > 0 then
 
@@ -986,7 +959,6 @@ local function BuyAllSeeds()
                         )
 
                 end)
-
 
                 task.wait(
                     BUY_DELAY
@@ -1013,23 +985,19 @@ local function FireHarvestPrompt(
         return false
     end
 
-
     local HarvestPart =
         Object:FindFirstChild(
             "HarvestPart"
         )
 
-
     if not HarvestPart then
         return false
     end
-
 
     local HarvestPrompt =
         HarvestPart:FindFirstChild(
             "HarvestPrompt"
         )
-
 
     if not HarvestPrompt
         or not HarvestPrompt:IsA(
@@ -1040,7 +1008,6 @@ local function FireHarvestPrompt(
 
     end
 
-
     local Success =
         pcall(function()
 
@@ -1049,7 +1016,6 @@ local function FireHarvestPrompt(
             )
 
         end)
-
 
     if Success then
 
@@ -1061,14 +1027,13 @@ local function FireHarvestPrompt(
 
     end
 
-
     return false
 
 end
 
 
 --==================================================
--- HARVEST BAMBOO / MUSHROOM
+-- HARVEST ONE TIME PLANT
 --==================================================
 
 local function HarvestOneTimePlant(
@@ -1079,12 +1044,10 @@ local function HarvestOneTimePlant(
         return false
     end
 
-
     local SeedName =
         Plant:GetAttribute(
             "SeedName"
         )
-
 
     if not ONE_TIME_PLANTS[
         SeedName
@@ -1094,19 +1057,14 @@ local function HarvestOneTimePlant(
 
     end
 
-
     local Mutation =
         Plant:GetAttribute(
             "Mutation"
         )
 
-
     if not Mutation then
-
         return false
-
     end
-
 
     return FireHarvestPrompt(
         Plant
@@ -1128,26 +1086,22 @@ local function GetFruitName(
             "SeedName"
         )
 
-
     if SeedName then
         return tostring(
             SeedName
         )
     end
 
-
     local FruitName =
         Fruit:GetAttribute(
             "FruitName"
         )
-
 
     if FruitName then
         return tostring(
             FruitName
         )
     end
-
 
     return tostring(
         Fruit.Name
@@ -1168,12 +1122,10 @@ local function HarvestFruit(
         return false
     end
 
-
     local CorePartName =
         Fruit:GetAttribute(
             "CorePartName"
         )
-
 
     if BLACKLIST[
         CorePartName
@@ -1182,7 +1134,6 @@ local function HarvestFruit(
         return false
 
     end
-
 
     local FruitName =
         GetFruitName(
@@ -1199,15 +1150,11 @@ local function HarvestFruit(
                 "Mutation"
             )
 
-
         if not Mutation then
-
             return false
-
         end
 
     end
-
 
     return FireHarvestPrompt(
         Fruit
@@ -1227,7 +1174,6 @@ local function HarvestPlant(
     if not Plant then
         return
     end
-
 
     local SeedName =
         Plant:GetAttribute(
@@ -1258,14 +1204,13 @@ local function HarvestPlant(
             "Fruits"
         )
 
-
     if not Fruits then
         return
     end
 
 
     --==================================================
-    -- MUTATION FRUIT FIRST
+    -- MUTATION FIRST
     --==================================================
 
     for _, Fruit in ipairs(
@@ -1279,7 +1224,6 @@ local function HarvestPlant(
             continue
 
         end
-
 
         HarvestFruit(
             Fruit
@@ -1304,7 +1248,6 @@ local function HarvestPlant(
 
         end
 
-
         HarvestFruit(
             Fruit
         )
@@ -1323,22 +1266,18 @@ local function AutoHarvest()
     local Plot =
         GetMyPlot()
 
-
     if not Plot then
         return
     end
-
 
     local Plants =
         Plot:FindFirstChild(
             "Plants"
         )
 
-
     if not Plants then
         return
     end
-
 
     for _, Plant in ipairs(
         Plants:GetChildren()
@@ -1369,7 +1308,6 @@ local function SellAll()
 
         end)
 
-
     if not Success
         or not Preview then
 
@@ -1377,17 +1315,14 @@ local function SellAll()
 
     end
 
-
     local FruitCount =
         tonumber(
             Preview.FruitCount
         ) or 0
 
-
     if FruitCount <= 0 then
         return
     end
-
 
     pcall(function()
 
@@ -1420,13 +1355,11 @@ local function SortSeeds(
 
             end
 
-
             return A.RarityValue
                 > B.RarityValue
 
         end
     )
-
 
     return Seeds
 
@@ -1446,7 +1379,6 @@ local function FindLowestReplaceablePlant(
     local LowestRarityValue =
         math.huge
 
-
     for _, Plant in ipairs(
         GetPlants()
     ) do
@@ -1456,18 +1388,15 @@ local function FindLowestReplaceablePlant(
                 "SeedName"
             )
 
-
         if not PlantSeedName then
             continue
         end
-
 
         local PlantRarity,
             PlantRarityValue =
             GetRarityFromSeedName(
                 PlantSeedName
             )
-
 
         if not PlantRarity then
 
@@ -1480,9 +1409,7 @@ local function FindLowestReplaceablePlant(
 
         end
 
-
         local CanReplace = false
-
 
         for _, SeedData in ipairs(
             ValidSeeds
@@ -1499,11 +1426,9 @@ local function FindLowestReplaceablePlant(
 
         end
 
-
         if not CanReplace then
             continue
         end
-
 
         if PlantRarityValue
             < LowestRarityValue then
@@ -1517,7 +1442,6 @@ local function FindLowestReplaceablePlant(
         end
 
     end
-
 
     return LowestPlant,
         LowestRarityValue
@@ -1537,21 +1461,17 @@ local function ShovelPlant(
         return false
     end
 
-
     local PlantId =
         Plant:GetAttribute(
             "PlantId"
         )
 
-
     if not PlantId then
         return false
     end
 
-
     local Shovel =
         EquipShovel()
-
 
     if not Shovel then
 
@@ -1563,17 +1483,14 @@ local function ShovelPlant(
 
     end
 
-
     local ShovelType =
         Shovel:GetAttribute(
             "Shovel"
         )
 
-
     if not ShovelType then
         return false
     end
-
 
     local Success =
         pcall(function()
@@ -1589,7 +1506,6 @@ local function ShovelPlant(
 
         end)
 
-
     if Success then
 
         task.wait(
@@ -1598,8 +1514,255 @@ local function ShovelPlant(
 
     end
 
-
     return Success
+
+end
+
+
+--==================================================
+-- GET EXPAND POSITION
+--==================================================
+
+local function GetExpandPosition(
+    Plot
+)
+
+    if not Plot then
+        return nil
+    end
+
+    local Signs =
+        Plot:FindFirstChild(
+            "Signs"
+        )
+
+    if not Signs then
+        return nil
+    end
+
+    local Expand =
+        Signs:FindFirstChild(
+            "Expand"
+        )
+
+    if not Expand then
+        return nil
+    end
+
+
+    --==================================================
+    -- MODEL
+    --==================================================
+
+    if Expand:IsA("Model") then
+
+        local Success,
+            Pivot =
+            pcall(function()
+
+                return Expand:GetPivot()
+
+            end)
+
+        if Success and Pivot then
+
+            return Pivot.Position
+
+        end
+
+    end
+
+
+    --==================================================
+    -- BASEPART
+    --==================================================
+
+    if Expand:IsA("BasePart") then
+
+        return Expand.Position
+
+    end
+
+
+    --==================================================
+    -- FALLBACK PRIMARY PART
+    --==================================================
+
+    local PrimaryPart =
+        Expand:IsA("Model")
+        and Expand.PrimaryPart
+
+    if PrimaryPart then
+
+        return PrimaryPart.Position
+
+    end
+
+    return nil
+
+end
+
+
+--==================================================
+-- GET FRONT BED SECTION PALING DEKAT EXPAND
+--==================================================
+
+local function GetPlantBedSection()
+
+    local Plot =
+        GetMyPlot()
+
+    if not Plot then
+        return nil
+    end
+
+    local Visual =
+        Plot:FindFirstChild(
+            "Visual"
+        )
+
+    if not Visual then
+        return nil
+    end
+
+
+    --==================================================
+    -- POSISI EXPAND
+    --==================================================
+
+    local ExpandPosition =
+        GetExpandPosition(
+            Plot
+        )
+
+    if not ExpandPosition then
+
+        warn(
+            "[AUTO PLANT] Signs.Expand tidak ditemukan."
+        )
+
+        return nil
+
+    end
+
+
+    --==================================================
+    -- CARI SEMUA FRONT_BedSection
+    --==================================================
+
+    local FrontSections = {}
+
+    for _, Obj in ipairs(
+        Visual:GetChildren()
+    ) do
+
+        if Obj.Name ==
+            "FRONT_BedSection" then
+
+            table.insert(
+                FrontSections,
+                Obj
+            )
+
+        end
+
+    end
+
+
+    if #FrontSections == 0 then
+
+        warn(
+            "[AUTO PLANT] FRONT_BedSection tidak ditemukan."
+        )
+
+        return nil
+
+    end
+
+
+    --==================================================
+    -- CARI YANG PALING DEKAT EXPAND
+    --==================================================
+
+    local ClosestSection = nil
+
+    local ClosestDistance =
+        math.huge
+
+
+    for _, Section in ipairs(
+        FrontSections
+    ) do
+
+        local SectionPosition
+
+
+        if Section:IsA("Model") then
+
+            local Success,
+                Pivot =
+                pcall(function()
+
+                    return Section:GetPivot()
+
+                end)
+
+            if Success and Pivot then
+
+                SectionPosition =
+                    Pivot.Position
+
+            end
+
+        elseif Section:IsA("BasePart") then
+
+            SectionPosition =
+                Section.Position
+
+        end
+
+
+        if SectionPosition then
+
+            local Distance =
+                (
+                    SectionPosition
+                    - ExpandPosition
+                ).Magnitude
+
+
+            if Distance <
+                ClosestDistance then
+
+                ClosestDistance =
+                    Distance
+
+                ClosestSection =
+                    Section
+
+            end
+
+        end
+
+    end
+
+
+    if ClosestSection then
+
+        print(
+            "[AUTO PLANT] FRONT_BedSection dipilih:",
+            ClosestSection:GetFullName()
+        )
+
+        print(
+            "[AUTO PLANT] Jarak ke Expand:",
+            ClosestDistance
+        )
+
+    end
+
+
+    return ClosestSection
 
 end
 
@@ -1610,31 +1773,8 @@ end
 
 local function GetBottomFace()
 
-    local Plot =
-        GetMyPlot()
-
-
-    if not Plot then
-        return nil
-    end
-
-
-    local Visual =
-        Plot:FindFirstChild(
-            "Visual"
-        )
-
-
-    if not Visual then
-        return nil
-    end
-
-
     local BedSection =
-        Visual:FindFirstChild(
-            "FRONT_BedSection"
-        )
-
+        GetPlantBedSection()
 
     if not BedSection then
         return nil
@@ -1646,9 +1786,16 @@ local function GetBottomFace()
             "BottomFace"
         )
 
-
     if not BottomFace then
+
+        warn(
+            "[AUTO PLANT] BottomFace tidak ditemukan:"
+            ,
+            BedSection:GetFullName()
+        )
+
         return nil
+
     end
 
 
@@ -1658,19 +1805,9 @@ end
 
 
 --==================================================
--- GET RANDOM RADIUS POSITION
---==================================================
+-- GET NEXT RANDOM PLANT POSITION
 --
--- Radius:
---     0 -> PLANT_RADIUS
---
--- Height:
---     0 -> PLANT_MAX_HEIGHT
---
--- Tidak menggunakan MAX_ATTEMPTS
--- Tidak menggunakan UsedPositions
---
--- Setiap seed mendapat posisi random sendiri.
+-- TIDAK ADA MAX ATTEMPTS
 --==================================================
 
 local function GetNextPlantPosition()
@@ -1678,54 +1815,89 @@ local function GetNextPlantPosition()
     local BottomFace =
         GetBottomFace()
 
-
     if not BottomFace then
         return nil
     end
 
 
-    local Angle =
-        math.random()
-        * math.pi
-        * 2
+    while true do
 
-
-    -- sqrt membuat distribusi lebih merata
-    -- di seluruh area lingkaran
-    local Radius =
-        math.sqrt(
+        local angle =
             math.random()
-        )
-        * PLANT_RADIUS
+            * math.pi
+            * 2
+
+        local radius =
+            math.sqrt(
+                math.random()
+            )
+            * RADIUS
+
+        local height =
+            math.random()
+            * MAX_HEIGHT
 
 
-    local Height =
-        math.random()
-        * PLANT_MAX_HEIGHT
+        local localPos =
+            Vector3.new(
 
+                math.cos(angle)
+                    * radius,
 
-    local LocalPosition =
-        Vector3.new(
+                height,
 
-            math.cos(Angle)
-            * Radius,
+                math.sin(angle)
+                    * radius
 
-            Height,
-
-            math.sin(Angle)
-            * Radius
-
-        )
-
-
-    local WorldPosition =
-        BottomFace.CFrame:
-            PointToWorldSpace(
-                LocalPosition
             )
 
 
-    return WorldPosition
+        local worldPos =
+            BottomFace.CFrame:
+                PointToWorldSpace(
+                    localPos
+                )
+
+
+        local Valid = true
+
+
+        --==================================================
+        -- CEK JARAK DENGAN POSISI SEBELUMNYA
+        --==================================================
+
+        for _, Pos in ipairs(
+            UsedPositions
+        ) do
+
+            if (
+                Pos
+                - worldPos
+            ).Magnitude
+                < MIN_DISTANCE then
+
+                Valid = false
+
+                break
+
+            end
+
+        end
+
+
+        if Valid then
+
+            table.insert(
+                UsedPositions,
+                worldPos
+            )
+
+
+            return worldPos
+
+        end
+
+    end
 
 end
 
@@ -1742,25 +1914,20 @@ local function PlantSeed(
         return false
     end
 
-
     local Tool =
         SeedData.Tool
-
 
     if not Tool then
         return false
     end
 
-
     local Character =
         LocalPlayer.Character
-
 
     local Backpack =
         LocalPlayer:FindFirstChild(
             "Backpack"
         )
-
 
     if not Character
         or not Backpack then
@@ -1769,7 +1936,6 @@ local function PlantSeed(
 
     end
 
-
     local CurrentCount =
         tonumber(
             Tool:GetAttribute(
@@ -1777,11 +1943,9 @@ local function PlantSeed(
             )
         ) or 0
 
-
     if CurrentCount <= 0 then
         return false
     end
-
 
     if Tool.Parent ~= Character
         and Tool.Parent ~= Backpack then
@@ -1790,27 +1954,19 @@ local function PlantSeed(
 
     end
 
-
-    --==================================================
-    -- EQUIP SEED
-    --==================================================
-
     if Tool.Parent ~= Character then
 
         Tool.Parent =
             Character
 
-
         task.wait(0.1)
 
     end
-
 
     local SeedTool =
         Tool:GetAttribute(
             "SeedTool"
         )
-
 
     if not SeedTool then
         return false
@@ -1818,12 +1974,11 @@ local function PlantSeed(
 
 
     --==================================================
-    -- RANDOM RADIUS POSITION
+    -- RANDOM POSITION
     --==================================================
 
     local PlantPos =
         GetNextPlantPosition()
-
 
     if not PlantPos then
         return false
@@ -1854,11 +2009,9 @@ local function PlantSeed(
             ACTION_DELAY
         )
 
-
         return true
 
     end
-
 
     return false
 
@@ -1876,7 +2029,6 @@ local function ShovelPhase(
     local CurrentPlants =
         CountPlants()
 
-
     local TotalSeedCount = 0
 
 
@@ -1891,7 +2043,6 @@ local function ShovelPhase(
                         "Count"
                     )
             ) or 0
-
 
         if Count > 0 then
 
@@ -1910,18 +2061,18 @@ local function ShovelPhase(
     local MAX_PLANTS =
         GetMaxPlants()
 
-
     local FreeSlots =
         math.max(
             0,
-            MAX_PLANTS - CurrentPlants
+            MAX_PLANTS
+            - CurrentPlants
         )
-
 
     local ShovelNeeded =
         math.max(
             0,
-            TotalSeedCount - FreeSlots
+            TotalSeedCount
+            - FreeSlots
         )
 
 
@@ -1967,7 +2118,9 @@ local function ShovelPhase(
     local Shoveled = 0
 
 
-    while Shoveled < ShovelNeeded do
+    while Shoveled <
+        ShovelNeeded do
+
 
         local LowestPlant =
             FindLowestReplaceablePlant(
@@ -2018,7 +2171,8 @@ local function ShovelPhase(
             os.clock()
 
 
-        while os.clock() - Start < 2 do
+        while os.clock()
+            - Start < 2 do
 
             if CountPlants()
                 < BeforeCount then
@@ -2026,7 +2180,6 @@ local function ShovelPhase(
                 break
 
             end
-
 
             task.wait(
                 0.05
@@ -2039,10 +2192,10 @@ local function ShovelPhase(
             CountPlants()
 
 
-        if AfterCount < BeforeCount then
+        if AfterCount <
+            BeforeCount then
 
             Shoveled += 1
-
 
             print(
                 "🔨 Shovel:",
@@ -2077,7 +2230,6 @@ local function ShovelPhase(
 
 
     UnequipTool()
-
 
     task.wait(
         0.15
@@ -2157,7 +2309,14 @@ local function PlantPhase()
 
 
     --==================================================
-    -- TANAM SESUAI JUMLAH SEED
+    -- RESET POSITIONS
+    --==================================================
+
+    UsedPositions = {}
+
+
+    --==================================================
+    -- PLANT SESUAI JUMLAH SEED
     --==================================================
 
     for _, SeedData in ipairs(
@@ -2175,15 +2334,10 @@ local function PlantPhase()
                 ) or 0
 
 
-            -- Tidak ada seed lagi
             if CurrentCount <= 0 then
                 break
             end
 
-
-            --==================================================
-            -- CEK SLOT
-            --==================================================
 
             local MAX_PLANTS =
                 GetMaxPlants()
@@ -2193,8 +2347,8 @@ local function PlantPhase()
                 CountPlants()
 
 
-            if CurrentPlants
-                >= MAX_PLANTS then
+            if CurrentPlants >=
+                MAX_PLANTS then
 
                 print(
                     "🌱 Plant penuh:",
@@ -2203,16 +2357,10 @@ local function PlantPhase()
                     MAX_PLANTS
                 )
 
-                UnequipTool()
-
-                return
+                break
 
             end
 
-
-            --==================================================
-            -- PLANT
-            --==================================================
 
             local Success =
                 PlantSeed(
@@ -2236,7 +2384,7 @@ local function PlantPhase()
                 "🌱 Plant:",
                 SeedData.SeedName,
                 "|",
-                CurrentPlants + 1,
+                CountPlants(),
                 "/",
                 GetMaxPlants()
             )
@@ -2252,7 +2400,6 @@ local function PlantPhase()
 
 
     UnequipTool()
-
 
     task.wait(
         0.15
@@ -2274,7 +2421,6 @@ local function SmartPlant()
 
     local Seeds =
         GetSeedTools()
-
 
     if #Seeds == 0 then
         return
@@ -2342,7 +2488,6 @@ local function TryExpand()
     local Plot =
         GetMyPlot()
 
-
     if not Plot then
         return
     end
@@ -2367,7 +2512,6 @@ local function TryExpand()
 
     local Leaves =
         GetLeaves()
-
 
     if Leaves == nil then
         return
@@ -2566,11 +2710,12 @@ print(
 )
 
 print(
-    "PLANT RADIUS: 4"
+    "PLANT RADIUS:",
+    RADIUS
 )
 
 print(
-    "PLANT HEIGHT: 0 - 3"
+    "PLANT AREA: FRONT_BedSection TERDEKAT Signs.Expand"
 )
 
 print(
@@ -2672,7 +2817,6 @@ task.spawn(function()
 
             local Plot =
                 GetMyPlot()
-
 
             if not Plot then
                 return
