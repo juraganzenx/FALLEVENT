@@ -23,6 +23,33 @@ if Middle then
 end
 
 --==================================================
+-- DESTROY RAIN EFFECT
+--==================================================
+
+local RainObjects = {
+    RainDrops = true,
+    StromRainDrops = true,
+    RainSplashes = true,
+    StromSplashes = true,
+}
+
+local function DestroyRainObject(Obj)
+    if RainObjects[Obj.Name] then
+        Obj:Destroy()
+    end
+end
+
+-- Hapus yang sudah ada
+for _, Obj in ipairs(workspace:GetChildren()) do
+    DestroyRainObject(Obj)
+end
+
+-- Hapus kalau muncul lagi
+workspace.ChildAdded:Connect(function(Obj)
+    DestroyRainObject(Obj)
+end)
+
+--==================================================
 -- PROTECTED PARTS
 --==================================================
 
