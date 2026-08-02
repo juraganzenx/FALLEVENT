@@ -1,4 +1,10 @@
+local Players = game:GetService("Players")
+
+local LocalPlayer = Players.LocalPlayer
+
 local Gardens = workspace:WaitForChild("Gardens")
+local Baseplate = workspace:WaitForChild("Baseplate")
+local Map = workspace:WaitForChild("Map")
 
 local ProtectedParts = {
     Base = true,
@@ -6,36 +12,71 @@ local ProtectedParts = {
     Stud_Part = true,
 }
 
-local function CheckPart(Obj)
-    if Obj:IsA("BasePart") and not ProtectedParts[Obj.Name] then
+--==================================================
+-- DESTROY DECOR & MIDDLE
+--==================================================
+
+local Decor = Baseplate:FindFirstChild("Decor")
+if Decor then
+    Decor:Destroy()
+end
+
+local Middle = Map:FindFirstChild("Middle")
+if Middle then
+    Middle:Destroy()
+end
+
+--==================================================
+-- CEK PLOT
+--==================================================
+
+local function IsMyPlot(Plot)
+    return Plot:GetAttribute("Owner") == LocalPlayer.Name
+end
+
+local function CheckPart(Obj, IsMine)
+    if not Obj:IsA("BasePart") then
+        return
+    end
+
+    if IsMine then
+        -- Plot kita: aturan awal
+        if not ProtectedParts[Obj.Name] then
+            Obj:Destroy()
+        end
+    else
+        -- Plot orang lain: destroy semua
         Obj:Destroy()
     end
 end
 
-local function SetupPlants(Plants)
+local function SetupPlot(Plot)
+    if not Plot:IsA("Model") then
+        return
+    end
+
+    local IsMine = IsMyPlot(Plot)
+
     -- Destroy yang sudah ada
-    for _, Obj in ipairs(Plants:GetDescendants()) do
-        CheckPart(Obj)
+    for _, Obj in ipairs(Plot:GetDescendants()) do
+        CheckPart(Obj, IsMine)
     end
 
     -- Destroy Part baru
-    Plants.DescendantAdded:Connect(function(Obj)
-        CheckPart(Obj)
+    Plot.DescendantAdded:Connect(function(Obj)
+        CheckPart(Obj, IsMine)
     end)
 end
 
--- Semua Plot
-for _, Plot in ipairs(Gardens:GetChildren()) do
-    local Plants = Plot:FindFirstChild("Plants")
+--==================================================
+-- SEMUA PLOT
+--==================================================
 
-    if Plants then
-        SetupPlants(Plants)
-    end
+for _, Plot in ipairs(Gardens:GetChildren()) do
+    SetupPlot(Plot)
 end
 
--- Kalau Plants baru dibuat di Plot
-Gardens.DescendantAdded:Connect(function(Obj)
-    if Obj.Name == "Plants" then
-        SetupPlants(Obj)
-    end
+-- Plot baru
+Gardens.ChildAdded:Connect(function(Plot)
+    SetupPlot(Plot)
 end)
