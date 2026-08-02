@@ -1,4 +1,4 @@
---==================================================
+--V6
 -- AUTO KAITUN
 --==================================================
 -- AUTO BUY
@@ -11,10 +11,14 @@
 --
 -- BAMBOO + MUSHROOM:
 -- 1x HARVEST / CABUT
--- Mutation ada di Plant
+-- Mutation dicek di PLANT
 --
--- FRUIT:
--- Mutation ada di Fruit
+-- ACORN:
+-- Fruit
+-- Mutation dicek di FRUIT
+--
+-- Fruit lainnya:
+-- Tetap harvest walaupun tidak ada Mutation
 --==================================================
 
 
@@ -136,17 +140,6 @@ local RARITY_ORDER = {
 
 --==================================================
 -- SEED RARITY
---
--- SEMUA NAMA MENGGUNAKAN DISPLAY NAME
---
--- Contoh:
--- Maple Carrot
--- Maple Bamboo
--- Maple Mushroom
--- Maple Acorn
---
--- TIDAK ADA:
--- MapleCarrotSeed
 --==================================================
 
 local SEED_RARITY = {
@@ -270,11 +263,12 @@ local SEED_RARITY = {
 
 
 --==================================================
--- PLANT TYPE
+-- ONE TIME PLANTS
 --
--- Bamboo dan Mushroom adalah PLANT 1x CABUT
+-- Bamboo dan Mushroom adalah PLANT
+-- 1x cabut
 --
--- Acorn tetap FRUIT
+-- Mutation dicek langsung di Plant
 --==================================================
 
 local ONE_TIME_PLANTS = {
@@ -282,6 +276,20 @@ local ONE_TIME_PLANTS = {
     ["Maple Bamboo"] = true,
 
     ["Maple Mushroom"] = true,
+
+}
+
+
+--==================================================
+-- MUTATION REQUIRED FRUIT
+--
+-- Acorn adalah FRUIT
+-- Mutation dicek di Fruit
+--==================================================
+
+local MUTATION_REQUIRED_FRUITS = {
+
+    ["Maple Acorn"] = true,
 
 }
 
@@ -581,10 +589,6 @@ local function GetSeedTools()
             end
 
 
-            --==================================================
-            -- DISPLAY NAME
-            --==================================================
-
             local SeedName =
                 Tool.Name
 
@@ -833,19 +837,20 @@ end
 --==================================================
 -- HARVEST ONE-TIME PLANT
 --
--- KHUSUS:
+-- Bamboo
+-- Mushroom
 --
--- Maple Bamboo
--- Maple Mushroom
---
--- Mutation ada langsung di Plant
---
--- BUKAN di Fruits
+-- Mutation WAJIB ada di Plant
 --==================================================
 
 local function HarvestOneTimePlant(
     Plant
 )
+
+    if not Plant then
+        return false
+    end
+
 
     local SeedName =
         Plant:GetAttribute(
@@ -863,7 +868,7 @@ local function HarvestOneTimePlant(
 
 
     --==================================================
-    -- MUTATION LANGSUNG DI PLANT
+    -- MUTATION DI PLANT
     --==================================================
 
     local Mutation =
@@ -873,20 +878,21 @@ local function HarvestOneTimePlant(
 
 
     --==================================================
-    -- Jika tidak ada mutation,
-    -- tetap boleh harvest.
-    --
-    -- Jika ingin hanya harvest mutation,
-    -- bagian ini bisa diubah.
+    -- BELUM ADA MUTATION
+    -- JANGAN CABUT
     --==================================================
 
-    if Mutation then
+    if not Mutation then
 
-        -- Mutation terdeteksi
-        -- pada Plant langsung.
+        return false
 
     end
 
+
+    --==================================================
+    -- SUDAH ADA MUTATION
+    -- CABUT
+    --==================================================
 
     return FireHarvestPrompt(
         Plant
@@ -896,16 +902,64 @@ end
 
 
 --==================================================
+-- GET FRUIT NAME
+--
+-- Beberapa game menyimpan SeedName
+-- pada Fruit.
+--
+-- Jika tidak ada, kita fallback
+-- ke Name.
+--==================================================
+
+local function GetFruitName(
+    Fruit
+)
+
+    local SeedName =
+        Fruit:GetAttribute(
+            "SeedName"
+        )
+
+
+    if SeedName then
+        return SeedName
+    end
+
+
+    local FruitName =
+        Fruit:GetAttribute(
+            "FruitName"
+        )
+
+
+    if FruitName then
+        return FruitName
+    end
+
+
+    return Fruit.Name
+
+end
+
+
+--==================================================
 -- HARVEST FRUIT
 --
--- Acorn masuk sini.
+-- ACORN:
+-- Mutation WAJIB ada di Fruit
 --
--- Mutation dicek pada Fruit.
+-- Fruit lainnya:
+-- Tetap harvest normal
 --==================================================
 
 local function HarvestFruit(
     Fruit
 )
+
+    if not Fruit then
+        return false
+    end
+
 
     local CorePartName =
         Fruit:GetAttribute(
@@ -923,21 +977,48 @@ local function HarvestFruit(
 
 
     --==================================================
-    -- MUTATION ADA DI FRUIT
+    -- GET FRUIT NAME
     --==================================================
 
-    local Mutation =
-        Fruit:GetAttribute(
-            "Mutation"
+    local FruitName =
+        GetFruitName(
+            Fruit
         )
 
 
-    if Mutation then
+    --==================================================
+    -- ACORN
+    --
+    -- WAJIB ADA MUTATION
+    --==================================================
 
-        -- Mutation fruit terdeteksi.
+    if MUTATION_REQUIRED_FRUITS[
+        FruitName
+    ] then
+
+        local Mutation =
+            Fruit:GetAttribute(
+                "Mutation"
+            )
+
+
+        --==================================================
+        -- ACORN BELUM MUTATION
+        -- JANGAN HARVEST
+        --==================================================
+
+        if not Mutation then
+
+            return false
+
+        end
 
     end
 
+
+    --==================================================
+    -- HARVEST
+    --==================================================
 
     return FireHarvestPrompt(
         Fruit
@@ -947,7 +1028,7 @@ end
 
 
 --==================================================
--- AUTO HARVEST ONE PLANT
+-- HARVEST ONE PLANT
 --==================================================
 
 local function HarvestPlant(
@@ -968,7 +1049,7 @@ local function HarvestPlant(
     --==================================================
     -- BAMBOO / MUSHROOM
     --
-    -- HARVEST LANGSUNG DI PLANT
+    -- Mutation dicek di Plant
     --==================================================
 
     if ONE_TIME_PLANTS[
@@ -986,8 +1067,6 @@ local function HarvestPlant(
 
     --==================================================
     -- PLANT NORMAL
-    --
-    -- HARVEST PLANT
     --==================================================
 
     FireHarvestPrompt(
@@ -1012,6 +1091,9 @@ local function HarvestPlant(
 
     --==================================================
     -- MUTATION FRUIT FIRST
+    --
+    -- Acorn dengan Mutation
+    -- akan diproses lebih dulu
     --==================================================
 
     for _, Fruit in ipairs(
@@ -1036,6 +1118,9 @@ local function HarvestPlant(
 
     --==================================================
     -- NORMAL FRUIT
+    --
+    -- Acorn tanpa Mutation akan
+    -- ditolak oleh HarvestFruit()
     --==================================================
 
     for _, Fruit in ipairs(
@@ -2038,15 +2123,15 @@ print(
 )
 
 print(
-    "BAMBOO: PLANT HARVEST"
+    "BAMBOO: PLANT MUTATION REQUIRED"
 )
 
 print(
-    "MUSHROOM: PLANT HARVEST"
+    "MUSHROOM: PLANT MUTATION REQUIRED"
 )
 
 print(
-    "ACORN: FRUIT HARVEST"
+    "ACORN: FRUIT MUTATION REQUIRED"
 )
 
 print(
