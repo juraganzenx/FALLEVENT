@@ -163,15 +163,9 @@ local WATERING_CAN_NAME =
 
 local SPRINKLERS = {
 
-    "Syrup Common Sprinkler",
+    "Syrup Sprinkler",
 
-    "Syup Uncommon Sprinkler",
-
-    "Syrup Rare Sprinkler",
-
-    "Syrup Legendary Sprinkler",
-
-    "Syrup Super Sprinkler",
+    "Super Syrup Sprinkler",
 
 }
 
