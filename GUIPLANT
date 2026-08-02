@@ -1,10 +1,11 @@
 --==================================================
--- 🌱 GARDEN PLANT COUNTERv2
--- SeedName Based
+-- 🌱 GARDEN PLANT COUNTER v3
+-- SeedName + Manual Rarity
 -- Compact / Draggable / Minimize
 --==================================================
 
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -12,10 +13,122 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local REFRESH_DELAY = 2
 
 --==================================================
+-- SEED RARITY
+--==================================================
+
+local SEED_RARITY = {
+
+    --==================================================
+    -- COMMON
+    --==================================================
+
+    ["Maple Carrot"] = "Common",
+    ["Maple Strawberry"] = "Common",
+    ["Maple Blueberry"] = "Common",
+
+    --==================================================
+    -- UNCOMMON
+    --==================================================
+
+    ["Maple Tulip"] = "Uncommon",
+    ["Maple Tomato"] = "Uncommon",
+    ["Maple Apple"] = "Uncommon",
+
+    --==================================================
+    -- RARE
+    --==================================================
+
+    ["Maple Bamboo"] = "Rare",
+    ["Maple Corn"] = "Rare",
+    ["Maple Cactus"] = "Rare",
+    ["Maple Pineapple"] = "Rare",
+
+    --==================================================
+    -- EPIC
+    --==================================================
+
+    ["Maple Mushroom"] = "Epic",
+    ["Maple Green Bean"] = "Epic",
+    ["Maple Banana"] = "Epic",
+    ["Maple Grape"] = "Epic",
+    ["Maple Coconut"] = "Epic",
+    ["Maple Mango"] = "Epic",
+
+    --==================================================
+    -- LEGENDARY
+    --==================================================
+
+    ["Maple Dragon Fruit"] = "Legendary",
+    ["Atlantic Giant Pumpkin"] = "Legendary",
+    ["Maple Acorn"] = "Legendary",
+    ["Maple Cherry"] = "Legendary",
+    ["Maple Sunflower"] = "Legendary",
+
+    --==================================================
+    -- MYTHIC
+    --==================================================
+
+    ["Maple Venus Fly Trap"] = "Mythic",
+    ["Maple Pomegranate"] = "Mythic",
+    ["Maple Poison Apple"] = "Mythic",
+    ["Maple Venom Spitter"] = "Mythic",
+    ["Conifer Cone"] = "Mythic",
+
+    --==================================================
+    -- SUPER
+    --==================================================
+
+    ["Amber Cranberry"] = "Super",
+}
+
+--==================================================
+-- RARITY ORDER
+--==================================================
+
+local RARITY_ORDER = {
+    ["Super"] = 1,
+    ["Mythic"] = 2,
+    ["Legendary"] = 3,
+    ["Epic"] = 4,
+    ["Rare"] = 5,
+    ["Uncommon"] = 6,
+    ["Common"] = 7,
+}
+
+--==================================================
+-- RARITY COLOR
+--==================================================
+
+local RARITY_COLOR = {
+
+    ["Common"] =
+        Color3.fromRGB(200, 200, 200),
+
+    ["Uncommon"] =
+        Color3.fromRGB(85, 255, 85),
+
+    ["Rare"] =
+        Color3.fromRGB(85, 170, 255),
+
+    ["Epic"] =
+        Color3.fromRGB(190, 85, 255),
+
+    ["Legendary"] =
+        Color3.fromRGB(255, 170, 0),
+
+    ["Mythic"] =
+        Color3.fromRGB(255, 70, 70),
+
+    ["Super"] =
+        Color3.fromRGB(255, 220, 60),
+}
+
+--==================================================
 -- REMOVE OLD GUI
 --==================================================
 
-local OldGui = PlayerGui:FindFirstChild("GardenPlantCounter")
+local OldGui =
+    PlayerGui:FindFirstChild("GardenPlantCounter")
 
 if OldGui then
     OldGui:Destroy()
@@ -27,7 +140,8 @@ end
 
 local function GetMyPlot()
 
-    local Gardens = workspace:FindFirstChild("Gardens")
+    local Gardens =
+        workspace:FindFirstChild("Gardens")
 
     if not Gardens then
         return nil
@@ -35,8 +149,11 @@ local function GetMyPlot()
 
     for _, Plot in ipairs(Gardens:GetChildren()) do
 
-        if Plot:GetAttribute("Owner") == LocalPlayer.Name then
+        if Plot:GetAttribute("Owner")
+            == LocalPlayer.Name then
+
             return Plot
+
         end
 
     end
@@ -52,7 +169,8 @@ local ScreenGui = Instance.new("ScreenGui")
 
 ScreenGui.Name = "GardenPlantCounter"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ZIndexBehavior =
+    Enum.ZIndexBehavior.Sibling
 
 ScreenGui.Parent = PlayerGui
 
@@ -64,26 +182,30 @@ local Main = Instance.new("Frame")
 
 Main.Name = "Main"
 
-Main.Size = UDim2.new(0, 220, 0, 300)
+Main.Size =
+    UDim2.new(0, 220, 0, 300)
 
--- POJOK KANAN ATAS
-Main.AnchorPoint = Vector2.new(1, 0)
+Main.AnchorPoint =
+    Vector2.new(1, 0)
 
-Main.Position = UDim2.new(1, -15, 0, 15)
+Main.Position =
+    UDim2.new(1, -15, 0, 15)
 
-Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Main.BackgroundColor3 =
+    Color3.fromRGB(25, 25, 25)
 
 Main.BorderSizePixel = 0
 
 Main.Parent = ScreenGui
 
 --==================================================
--- CORNER
+-- MAIN CORNER
 --==================================================
 
 local MainCorner = Instance.new("UICorner")
 
-MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.CornerRadius =
+    UDim.new(0, 8)
 
 MainCorner.Parent = Main
 
@@ -95,9 +217,11 @@ local Header = Instance.new("Frame")
 
 Header.Name = "Header"
 
-Header.Size = UDim2.new(1, 0, 0, 32)
+Header.Size =
+    UDim2.new(1, 0, 0, 32)
 
-Header.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Header.BackgroundColor3 =
+    Color3.fromRGB(35, 35, 35)
 
 Header.BorderSizePixel = 0
 
@@ -109,7 +233,8 @@ Header.Parent = Main
 
 local HeaderCorner = Instance.new("UICorner")
 
-HeaderCorner.CornerRadius = UDim.new(0, 8)
+HeaderCorner.CornerRadius =
+    UDim.new(0, 8)
 
 HeaderCorner.Parent = Header
 
@@ -119,21 +244,26 @@ HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
 
-Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Size =
+    UDim2.new(1, -40, 1, 0)
 
-Title.Position = UDim2.new(0, 8, 0, 0)
+Title.Position =
+    UDim2.new(0, 8, 0, 0)
 
 Title.BackgroundTransparency = 1
 
 Title.Text = "🌱 Garden"
 
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextColor3 =
+    Color3.fromRGB(255, 255, 255)
 
 Title.TextSize = 14
 
-Title.Font = Enum.Font.GothamBold
+Title.Font =
+    Enum.Font.GothamBold
 
-Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.TextXAlignment =
+    Enum.TextXAlignment.Left
 
 Title.Parent = Header
 
@@ -141,23 +271,28 @@ Title.Parent = Header
 -- MINIMIZE BUTTON
 --==================================================
 
-local MinimizeButton = Instance.new("TextButton")
+local MinimizeButton =
+    Instance.new("TextButton")
 
 MinimizeButton.Name = "Minimize"
 
-MinimizeButton.Size = UDim2.new(0, 28, 0, 28)
+MinimizeButton.Size =
+    UDim2.new(0, 28, 0, 28)
 
-MinimizeButton.Position = UDim2.new(1, -30, 0, 2)
+MinimizeButton.Position =
+    UDim2.new(1, -30, 0, 2)
 
 MinimizeButton.BackgroundTransparency = 1
 
 MinimizeButton.Text = "−"
 
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextColor3 =
+    Color3.fromRGB(255, 255, 255)
 
 MinimizeButton.TextSize = 20
 
-MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.Font =
+    Enum.Font.GothamBold
 
 MinimizeButton.Parent = Header
 
@@ -169,9 +304,11 @@ local Content = Instance.new("Frame")
 
 Content.Name = "Content"
 
-Content.Size = UDim2.new(1, 0, 1, -32)
+Content.Size =
+    UDim2.new(1, 0, 1, -32)
 
-Content.Position = UDim2.new(0, 0, 0, 32)
+Content.Position =
+    UDim2.new(0, 0, 0, 32)
 
 Content.BackgroundTransparency = 1
 
@@ -181,23 +318,30 @@ Content.Parent = Main
 -- STATUS
 --==================================================
 
-local StatusLabel = Instance.new("TextLabel")
+local StatusLabel =
+    Instance.new("TextLabel")
 
-StatusLabel.Size = UDim2.new(1, -16, 0, 20)
+StatusLabel.Size =
+    UDim2.new(1, -16, 0, 20)
 
-StatusLabel.Position = UDim2.new(0, 8, 0, 4)
+StatusLabel.Position =
+    UDim2.new(0, 8, 0, 4)
 
 StatusLabel.BackgroundTransparency = 1
 
-StatusLabel.Text = "Mencari garden..."
+StatusLabel.Text =
+    "Mencari garden..."
 
-StatusLabel.TextColor3 = Color3.fromRGB(160, 160, 160)
+StatusLabel.TextColor3 =
+    Color3.fromRGB(160, 160, 160)
 
 StatusLabel.TextSize = 11
 
-StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.Font =
+    Enum.Font.Gotham
 
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.TextXAlignment =
+    Enum.TextXAlignment.Left
 
 StatusLabel.Parent = Content
 
@@ -205,23 +349,29 @@ StatusLabel.Parent = Content
 -- TOTAL
 --==================================================
 
-local TotalLabel = Instance.new("TextLabel")
+local TotalLabel =
+    Instance.new("TextLabel")
 
-TotalLabel.Size = UDim2.new(1, -16, 0, 22)
+TotalLabel.Size =
+    UDim2.new(1, -16, 0, 22)
 
-TotalLabel.Position = UDim2.new(0, 8, 0, 23)
+TotalLabel.Position =
+    UDim2.new(0, 8, 0, 23)
 
 TotalLabel.BackgroundTransparency = 1
 
 TotalLabel.Text = "Total: 0"
 
-TotalLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+TotalLabel.TextColor3 =
+    Color3.fromRGB(100, 255, 100)
 
 TotalLabel.TextSize = 13
 
-TotalLabel.Font = Enum.Font.GothamBold
+TotalLabel.Font =
+    Enum.Font.GothamBold
 
-TotalLabel.TextXAlignment = Enum.TextXAlignment.Left
+TotalLabel.TextXAlignment =
+    Enum.TextXAlignment.Left
 
 TotalLabel.Parent = Content
 
@@ -229,23 +379,29 @@ TotalLabel.Parent = Content
 -- SCROLL
 --==================================================
 
-local Scroll = Instance.new("ScrollingFrame")
+local Scroll =
+    Instance.new("ScrollingFrame")
 
 Scroll.Name = "PlantList"
 
-Scroll.Size = UDim2.new(1, -16, 1, -52)
+Scroll.Size =
+    UDim2.new(1, -16, 1, -52)
 
-Scroll.Position = UDim2.new(0, 8, 0, 48)
+Scroll.Position =
+    UDim2.new(0, 8, 0, 48)
 
-Scroll.BackgroundColor3 = Color3.fromRGB(32, 32, 32)
+Scroll.BackgroundColor3 =
+    Color3.fromRGB(32, 32, 32)
 
 Scroll.BorderSizePixel = 0
 
 Scroll.ScrollBarThickness = 3
 
-Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+Scroll.CanvasSize =
+    UDim2.new(0, 0, 0, 0)
 
-Scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Scroll.AutomaticCanvasSize =
+    Enum.AutomaticSize.Y
 
 Scroll.Parent = Content
 
@@ -253,9 +409,11 @@ Scroll.Parent = Content
 -- SCROLL CORNER
 --==================================================
 
-local ScrollCorner = Instance.new("UICorner")
+local ScrollCorner =
+    Instance.new("UICorner")
 
-ScrollCorner.CornerRadius = UDim.new(0, 6)
+ScrollCorner.CornerRadius =
+    UDim.new(0, 6)
 
 ScrollCorner.Parent = Scroll
 
@@ -263,27 +421,35 @@ ScrollCorner.Parent = Scroll
 -- PADDING
 --==================================================
 
-local Padding = Instance.new("UIPadding")
+local Padding =
+    Instance.new("UIPadding")
 
-Padding.PaddingTop = UDim.new(0, 3)
+Padding.PaddingTop =
+    UDim.new(0, 3)
 
-Padding.PaddingBottom = UDim.new(0, 3)
+Padding.PaddingBottom =
+    UDim.new(0, 3)
 
-Padding.PaddingLeft = UDim.new(0, 5)
+Padding.PaddingLeft =
+    UDim.new(0, 5)
 
-Padding.PaddingRight = UDim.new(0, 5)
+Padding.PaddingRight =
+    UDim.new(0, 5)
 
 Padding.Parent = Scroll
 
 --==================================================
--- LAYOUT
+-- LIST LAYOUT
 --==================================================
 
-local Layout = Instance.new("UIListLayout")
+local Layout =
+    Instance.new("UIListLayout")
 
-Layout.Padding = UDim.new(0, 1)
+Layout.Padding =
+    UDim.new(0, 1)
 
-Layout.SortOrder = Enum.SortOrder.Name
+Layout.SortOrder =
+    Enum.SortOrder.LayoutOrder
 
 Layout.Parent = Scroll
 
@@ -293,13 +459,28 @@ Layout.Parent = Scroll
 
 local function GetPlantName(Object)
 
-    local SeedName = Object:GetAttribute("SeedName")
+    local SeedName =
+        Object:GetAttribute("SeedName")
 
-    if typeof(SeedName) == "string" and SeedName ~= "" then
+    if typeof(SeedName) == "string"
+        and SeedName ~= "" then
+
         return SeedName
+
     end
 
     return nil
+end
+
+--==================================================
+-- GET RARITY FROM MANUAL TABLE
+--==================================================
+
+local function GetRarity(SeedName)
+
+    return SEED_RARITY[SeedName]
+        or "Unknown"
+
 end
 
 --==================================================
@@ -308,7 +489,8 @@ end
 
 local function ClearList()
 
-    for _, Child in ipairs(Scroll:GetChildren()) do
+    for _, Child in
+        ipairs(Scroll:GetChildren()) do
 
         if Child:IsA("TextLabel") then
             Child:Destroy()
@@ -319,35 +501,54 @@ local function ClearList()
 end
 
 --==================================================
--- CREATE ROW
+-- CREATE PLANT ROW
 --==================================================
 
-local function CreatePlantRow(Name, Count)
+local function CreatePlantRow(
+    Name,
+    Count,
+    Rarity,
+    Order
+)
 
-    local Row = Instance.new("TextLabel")
+    local Row =
+        Instance.new("TextLabel")
 
-    Row.Name = "Plant_" .. Name
+    Row.Name =
+        "Plant_" .. Name
 
-    Row.Size = UDim2.new(1, 0, 0, 22)
+    Row.Size =
+        UDim2.new(1, 0, 0, 22)
 
     Row.BackgroundTransparency = 1
 
-    Row.Text = Name .. " = " .. tostring(Count)
+    Row.Text =
+        Name .. " = " .. tostring(Count)
 
-    Row.TextColor3 = Color3.fromRGB(235, 235, 235)
+    --==============================================
+    -- COLOR BERDASARKAN RARITY
+    --==============================================
+
+    Row.TextColor3 =
+        RARITY_COLOR[Rarity]
+        or Color3.fromRGB(235, 235, 235)
 
     Row.TextSize = 12
 
-    Row.Font = Enum.Font.Gotham
+    Row.Font =
+        Enum.Font.Gotham
 
-    Row.TextXAlignment = Enum.TextXAlignment.Left
+    Row.TextXAlignment =
+        Enum.TextXAlignment.Left
+
+    Row.LayoutOrder = Order
 
     Row.Parent = Scroll
 
 end
 
 --==================================================
--- UPDATE
+-- UPDATE PLANTS
 --==================================================
 
 local function UpdatePlants()
@@ -356,32 +557,54 @@ local function UpdatePlants()
 
     if not Plot then
 
-        StatusLabel.Text = "Garden tidak ditemukan"
+        StatusLabel.Text =
+            "Garden tidak ditemukan"
 
-        TotalLabel.Text = "Total: 0"
+        TotalLabel.Text =
+            "Total: 0"
 
         ClearList()
 
         return
     end
 
-    StatusLabel.Text = Plot.Name
+    StatusLabel.Text =
+        Plot.Name
+
+    --==============================================
+    -- PLANTS
+    --==============================================
 
     local Plants = {}
 
     local Total = 0
 
     --==============================================
-    -- SCAN
+    -- SCAN GARDEN
     --==============================================
 
-    for _, Object in ipairs(Plot:GetDescendants()) do
+    for _, Object in
+        ipairs(Plot:GetDescendants()) do
 
-        local PlantName = GetPlantName(Object)
+        -- HANYA SeedName
+        local PlantName =
+            GetPlantName(Object)
 
         if PlantName then
 
-            Plants[PlantName] = (Plants[PlantName] or 0) + 1
+            local Rarity =
+                GetRarity(PlantName)
+
+            if not Plants[PlantName] then
+
+                Plants[PlantName] = {
+                    Count = 0,
+                    Rarity = Rarity
+                }
+
+            end
+
+            Plants[PlantName].Count += 1
 
             Total += 1
 
@@ -399,33 +622,72 @@ local function UpdatePlants()
     -- TOTAL
     --==============================================
 
-    TotalLabel.Text = "Total: " .. tostring(Total)
+    TotalLabel.Text =
+        "Total: " .. tostring(Total)
 
     --==============================================
-    -- SORT
+    -- BUILD LIST
     --==============================================
 
-    local Names = {}
+    local PlantList = {}
 
-    for Name in pairs(Plants) do
-        table.insert(Names, Name)
+    for Name, Data in
+        pairs(Plants) do
+
+        table.insert(
+            PlantList,
+            {
+                Name = Name,
+                Count = Data.Count,
+                Rarity = Data.Rarity
+            }
+        )
+
     end
 
-    table.sort(Names, function(A, B)
+    --==============================================
+    -- SORT RARITY
+    --==============================================
 
-        return A:lower() < B:lower()
+    table.sort(
+        PlantList,
+        function(A, B)
 
-    end)
+            local OrderA =
+                RARITY_ORDER[A.Rarity]
+                or 999
+
+            local OrderB =
+                RARITY_ORDER[B.Rarity]
+                or 999
+
+            if OrderA ~= OrderB then
+
+                return OrderA < OrderB
+
+            end
+
+            -- Kalau rarity sama,
+            -- urutkan berdasarkan nama
+
+            return A.Name:lower()
+                < B.Name:lower()
+
+        end
+    )
 
     --==============================================
     -- DISPLAY
     --==============================================
 
-    for _, Name in ipairs(Names) do
+    for Index, Data
+        in ipairs(PlantList) do
 
         CreatePlantRow(
-            Name,
-            Plants[Name]
+            Data.Name,
+            Data.Count,
+            Data.Rarity,
+            Index
         )
 
     end
@@ -438,39 +700,44 @@ end
 
 local IsMinimized = false
 
-local NormalSize = UDim2.new(0, 220, 0, 300)
+local NormalSize =
+    UDim2.new(0, 220, 0, 300)
 
-local MinimizedSize = UDim2.new(0, 220, 0, 32)
+local MinimizedSize =
+    UDim2.new(0, 220, 0, 32)
 
-MinimizeButton.MouseButton1Click:Connect(function()
+MinimizeButton.MouseButton1Click:Connect(
+    function()
 
-    IsMinimized = not IsMinimized
+        IsMinimized =
+            not IsMinimized
 
-    if IsMinimized then
+        if IsMinimized then
 
-        Content.Visible = false
+            Content.Visible = false
 
-        Main.Size = MinimizedSize
+            Main.Size =
+                MinimizedSize
 
-        MinimizeButton.Text = "+"
+            MinimizeButton.Text = "+"
 
-    else
+        else
 
-        Content.Visible = true
+            Content.Visible = true
 
-        Main.Size = NormalSize
+            Main.Size =
+                NormalSize
 
-        MinimizeButton.Text = "−"
+            MinimizeButton.Text = "−"
+
+        end
 
     end
-
-end)
+)
 
 --==================================================
 -- DRAG SYSTEM
 --==================================================
-
-local UserInputService = game:GetService("UserInputService")
 
 local Dragging = false
 
@@ -478,69 +745,91 @@ local DragStart
 
 local StartPosition
 
-Header.InputBegan:Connect(function(Input)
+Header.InputBegan:Connect(
+    function(Input)
 
-    if Input.UserInputType == Enum.UserInputType.MouseButton1
-        or Input.UserInputType == Enum.UserInputType.Touch then
+        if Input.UserInputType ==
+            Enum.UserInputType.MouseButton1
+            or
+            Input.UserInputType ==
+            Enum.UserInputType.Touch then
 
-        Dragging = true
+            Dragging = true
 
-        DragStart = Input.Position
+            DragStart =
+                Input.Position
 
-        StartPosition = Main.Position
+            StartPosition =
+                Main.Position
 
-        Input.Changed:Connect(function()
+            Input.Changed:Connect(
+                function()
 
-            if Input.UserInputState == Enum.UserInputState.End then
+                    if Input.UserInputState ==
+                        Enum.UserInputState.End then
 
-                Dragging = false
+                        Dragging = false
 
-            end
+                    end
 
-        end)
+                end
+            )
+
+        end
 
     end
+)
 
-end)
+UserInputService.InputChanged:Connect(
+    function(Input)
 
-UserInputService.InputChanged:Connect(function(Input)
+        if not Dragging then
+            return
+        end
 
-    if not Dragging then
-        return
+        if Input.UserInputType ~=
+            Enum.UserInputType.MouseMovement
+            and
+            Input.UserInputType ~=
+            Enum.UserInputType.Touch then
+
+            return
+
+        end
+
+        local Delta =
+            Input.Position - DragStart
+
+        Main.Position =
+            UDim2.new(
+                StartPosition.X.Scale,
+                StartPosition.X.Offset + Delta.X,
+                StartPosition.Y.Scale,
+                StartPosition.Y.Offset + Delta.Y
+            )
+
     end
-
-    if Input.UserInputType ~= Enum.UserInputType.MouseMovement
-        and Input.UserInputType ~= Enum.UserInputType.Touch then
-
-        return
-    end
-
-    local Delta = Input.Position - DragStart
-
-    Main.Position = UDim2.new(
-        StartPosition.X.Scale,
-        StartPosition.X.Offset + Delta.X,
-        StartPosition.Y.Scale,
-        StartPosition.Y.Offset + Delta.Y
-    )
-
-end)
+)
 
 --==================================================
 -- UPDATE LOOP
 --==================================================
 
-task.spawn(function()
+task.spawn(
+    function()
 
-    while task.wait(REFRESH_DELAY) do
+        while task.wait(REFRESH_DELAY) do
 
-        pcall(function()
-            UpdatePlants()
-        end)
+            pcall(
+                function()
+                    UpdatePlants()
+                end
+            )
+
+        end
 
     end
-
-end)
+)
 
 --==================================================
 -- FIRST UPDATE
