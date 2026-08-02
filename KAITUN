@@ -1,17 +1,31 @@
---KAITUNFALLEVENT V2
-
+--V4
 -- AUTO KAITUN
 --==================================================
 -- AUTO BUY
--- AUTO HARVEST (INDEPENDENT)
--- AUTO SELL ALL (INDEPENDENT)
+-- AUTO HARVEST
+-- AUTO SELL ALL
 -- SMART SHOVEL
 -- AUTO PLANT
 --
 -- MAX 200 PLANTS
 --
--- HARVEST + SELL TIDAK MENUNGGU
--- BUY / SHOVEL / PLANT
+-- HARVEST + SELL BERJALAN INDEPENDENT
+--
+-- SHOVEL -> UNEQUIP -> PLANT -> UNEQUIP
+--
+-- PLANT POSITION:
+-- RANDOM PATTERN DALAM RADIUS
+--
+-- SEEDNAME:
+-- LANGSUNG DISPLAY NAME
+--
+-- CONTOH:
+-- Maple Carrot
+-- Maple Dragon Fruit
+--
+-- TIDAK MENGGUNAKAN:
+-- MapleCarrotSeed
+-- MapleDragonFruitSeed
 --==================================================
 
 
@@ -109,6 +123,24 @@ local MAIN_LOOP_DELAY = 0.5
 
 
 --==================================================
+-- PLANT POSITION CONFIG
+--==================================================
+
+local RADIUS = 4
+
+local MAX_HEIGHT = 3
+
+local MIN_DISTANCE = 0.1
+
+
+--==================================================
+-- USED PLANT POSITIONS
+--==================================================
+
+local UsedPositions = {}
+
+
+--==================================================
 -- RARITY ORDER
 --==================================================
 
@@ -134,15 +166,15 @@ local RARITY_ORDER = {
 --==================================================
 -- SEED RARITY
 --
--- SEMUA NAMA ADALAH DISPLAY NAME
+-- SEMUA NAMA HARUS DISPLAY NAME
 --
--- Garden Attribute SeedName:
+-- Attribute SeedName:
 --
 -- Maple Carrot
 -- Maple Strawberry
 -- Maple Dragon Fruit
 --
--- TIDAK PERNAH:
+-- BUKAN:
 --
 -- MapleCarrotSeed
 -- MapleDragonFruitSeed
@@ -269,7 +301,7 @@ local SEED_RARITY = {
 
 
 --==================================================
--- BLACKLIST FRUIT
+-- FRUIT BLACKLIST
 --==================================================
 
 local BLACKLIST = {
@@ -280,16 +312,29 @@ local BLACKLIST = {
 
 
 --==================================================
+-- SPECIAL MUTATION FRUITS
+--
+-- BUah ini hanya boleh di-harvest
+-- jika Attribute Mutation ADA.
+--==================================================
+
+local MUTATION_REQUIRED_FRUITS = {
+
+    ["Maple Bamboo"] = true,
+
+    ["Maple Mushroom"] = true,
+
+}
+
+
+--==================================================
 -- GET RARITY
 --
 -- INPUT:
---
 -- Maple Carrot
 --
 -- OUTPUT:
---
--- Common
--- 1
+-- Common, 1
 --==================================================
 
 local function GetRarityFromSeedName(
@@ -501,7 +546,7 @@ local function EquipShovel()
 
 
     --==================================================
-    -- CARI BACKPACK
+    -- CARI DI BACKPACK
     --==================================================
 
     for _, Tool in ipairs(
@@ -517,7 +562,9 @@ local function EquipShovel()
                 Character
 
 
-            task.wait(0.1)
+            task.wait(
+                0.1
+            )
 
 
             return Tool
@@ -533,7 +580,7 @@ end
 
 
 --==================================================
--- GET SEED TOOLS
+-- GET ALL SEED TOOLS
 --==================================================
 
 local function GetSeedTools()
@@ -570,7 +617,7 @@ local function GetSeedTools()
 
 
             --==================================================
-            -- SEED TOOL
+            -- HARUS PUNYA SEEDTOOL
             --==================================================
 
             local SeedTool =
@@ -585,11 +632,12 @@ local function GetSeedTools()
 
 
             --==================================================
-            -- NAMA DISPLAY
+            -- NAMA SEED
             --
-            -- CONTOH:
+            -- Tool.Name:
             --
             -- Maple Carrot
+            -- Maple Dragon Fruit
             --==================================================
 
             local SeedName =
@@ -618,6 +666,10 @@ local function GetSeedTools()
                     )
                 ) or 0
 
+
+            --==================================================
+            -- ONLY COUNT > 0
+            --==================================================
 
             if Count > 0 then
 
@@ -653,13 +705,19 @@ local function GetSeedTools()
     end
 
 
+    --==================================================
     -- BACKPACK
+    --==================================================
+
     Scan(
         Backpack
     )
 
 
+    --==================================================
     -- CHARACTER
+    --==================================================
+
     if Character then
 
         Scan(
@@ -782,6 +840,151 @@ end
 
 
 --==================================================
+-- CHECK MUTATION REQUIRED
+--==================================================
+
+local function IsMutationRequiredFruit(
+    FruitName
+)
+
+    return MUTATION_REQUIRED_FRUITS[
+        FruitName
+    ] == true
+
+end
+
+
+--==================================================
+-- HARVEST ONE FRUIT
+--==================================================
+
+local function HarvestFruit(
+    Fruit
+)
+
+    if not Fruit then
+        return false
+    end
+
+
+    --==================================================
+    -- GET FRUIT NAME
+    --==================================================
+
+    local FruitName =
+        Fruit:GetAttribute(
+            "CorePartName"
+        )
+
+
+    if not FruitName then
+
+        FruitName =
+            Fruit.Name
+
+    end
+
+
+    --==================================================
+    -- BLACKLIST
+    --==================================================
+
+    if BLACKLIST[
+        FruitName
+    ] then
+
+        return false
+
+    end
+
+
+    --==================================================
+    -- SPECIAL MUTATION FRUIT
+    --
+    -- Maple Bamboo
+    -- Maple Mushroom
+    --
+    -- WAJIB ADA MUTATION
+    --==================================================
+
+    if IsMutationRequiredFruit(
+        FruitName
+    ) then
+
+        local Mutation =
+            Fruit:GetAttribute(
+                "Mutation"
+            )
+
+
+        if not Mutation then
+
+            return false
+
+        end
+
+    end
+
+
+    --==================================================
+    -- HARVEST PART
+    --==================================================
+
+    local HarvestPart =
+        Fruit:FindFirstChild(
+            "HarvestPart"
+        )
+
+
+    if not HarvestPart then
+        return false
+    end
+
+
+    --==================================================
+    -- PROMPT
+    --==================================================
+
+    local HarvestPrompt =
+        HarvestPart:FindFirstChild(
+            "HarvestPrompt"
+        )
+
+
+    if not HarvestPrompt
+        or not HarvestPrompt:IsA(
+            "ProximityPrompt"
+        ) then
+
+        return false
+
+    end
+
+
+    --==================================================
+    -- HARVEST
+    --==================================================
+
+    pcall(function()
+
+        fireproximityprompt(
+            HarvestPrompt
+        )
+
+    end)
+
+
+    task.wait(
+        HARVEST_DELAY
+    )
+
+
+    return true
+
+end
+
+
+--==================================================
 -- HARVEST ONE PLANT
 --==================================================
 
@@ -790,11 +993,8 @@ local function HarvestPlant(
 )
 
     if not Plant then
-        return 0
+        return
     end
-
-
-    local Harvested = 0
 
 
     --==================================================
@@ -829,9 +1029,6 @@ local function HarvestPlant(
             end)
 
 
-            Harvested += 1
-
-
             task.wait(
                 HARVEST_DELAY
             )
@@ -852,7 +1049,7 @@ local function HarvestPlant(
 
 
     if not Fruits then
-        return Harvested
+        return
     end
 
 
@@ -864,67 +1061,13 @@ local function HarvestPlant(
         Fruits:GetChildren()
     ) do
 
-        if not Fruit:GetAttribute(
+        if Fruit:GetAttribute(
             "Mutation"
         ) then
 
-            continue
-
-        end
-
-
-        local CorePartName =
-            Fruit:GetAttribute(
-                "CorePartName"
+            HarvestFruit(
+                Fruit
             )
-
-
-        if BLACKLIST[
-            CorePartName
-        ] then
-
-            continue
-
-        end
-
-
-        local FruitHarvestPart =
-            Fruit:FindFirstChild(
-                "HarvestPart"
-            )
-
-
-        if FruitHarvestPart then
-
-            local FruitPrompt =
-                FruitHarvestPart:
-                    FindFirstChild(
-                        "HarvestPrompt"
-                    )
-
-
-            if FruitPrompt
-                and FruitPrompt:IsA(
-                    "ProximityPrompt"
-                ) then
-
-                pcall(function()
-
-                    fireproximityprompt(
-                        FruitPrompt
-                    )
-
-                end)
-
-
-                Harvested += 1
-
-
-                task.wait(
-                    HARVEST_DELAY
-                )
-
-            end
 
         end
 
@@ -933,6 +1076,9 @@ local function HarvestPlant(
 
     --==================================================
     -- NORMAL FRUIT
+    --
+    -- SPECIAL FRUIT TETAP AKAN DICEK
+    -- DI HarvestFruit()
     --==================================================
 
     for _, Fruit in ipairs(
@@ -948,95 +1094,11 @@ local function HarvestPlant(
         end
 
 
-        local CorePartName =
-            Fruit:GetAttribute(
-                "CorePartName"
-            )
-
-
-        if BLACKLIST[
-            CorePartName
-        ] then
-
-            continue
-
-        end
-
-
-        local FruitHarvestPart =
-            Fruit:FindFirstChild(
-                "HarvestPart"
-            )
-
-
-        if FruitHarvestPart then
-
-            local FruitPrompt =
-                FruitHarvestPart:
-                    FindFirstChild(
-                        "HarvestPrompt"
-                    )
-
-
-            if FruitPrompt
-                and FruitPrompt:IsA(
-                    "ProximityPrompt"
-                ) then
-
-                pcall(function()
-
-                    fireproximityprompt(
-                        FruitPrompt
-                    )
-
-                end)
-
-
-                Harvested += 1
-
-
-                task.wait(
-                    HARVEST_DELAY
-                )
-
-            end
-
-        end
+        HarvestFruit(
+            Fruit
+        )
 
     end
-
-
-    return Harvested
-
-end
-
-
---==================================================
--- SPECIAL MUTATION FRUIT
---
--- Fruit ini WAJIB memiliki Attribute Mutation
--- sebelum boleh di-harvest.
---==================================================
-
-local MUTATION_REQUIRED_FRUITS = {
-
-    ["Maple Bamboo"] = true,
-    ["Maple Mushroom"] = true,
-
-}
-
-
---==================================================
--- CHECK SPECIAL FRUIT
---==================================================
-
-local function IsMutationRequiredFruit(
-    FruitName
-)
-
-    return MUTATION_REQUIRED_FRUITS[
-        FruitName
-    ] == true
 
 end
 
@@ -1071,189 +1133,9 @@ local function AutoHarvest()
         Plants:GetChildren()
     ) do
 
-
-        --==================================================
-        -- HARVEST PLANT
-        --==================================================
-
-        local HarvestPart =
-            Plant:FindFirstChild(
-                "HarvestPart"
-            )
-
-
-        if HarvestPart then
-
-            local HarvestPrompt =
-                HarvestPart:FindFirstChild(
-                    "HarvestPrompt"
-                )
-
-
-            if HarvestPrompt
-                and HarvestPrompt:IsA(
-                    "ProximityPrompt"
-                ) then
-
-                pcall(function()
-
-                    fireproximityprompt(
-                        HarvestPrompt
-                    )
-
-                end)
-
-
-                task.wait(
-                    HARVEST_DELAY
-                )
-
-            end
-
-        end
-
-
-        --==================================================
-        -- FRUITS
-        --==================================================
-
-        local Fruits =
-            Plant:FindFirstChild(
-                "Fruits"
-            )
-
-
-        if not Fruits then
-            continue
-        end
-
-
-        for _, Fruit in ipairs(
-            Fruits:GetChildren()
-        ) do
-
-
-            --==================================================
-            -- FRUIT NAME
-            --
-            -- Prioritas:
-            -- CorePartName
-            --
-            -- Contoh:
-            -- Maple Bamboo
-            -- Maple Mushroom
-            --==================================================
-
-            local FruitName =
-                Fruit:GetAttribute(
-                    "CorePartName"
-                )
-
-
-            if not FruitName then
-
-                FruitName =
-                    Fruit.Name
-
-            end
-
-
-            --==================================================
-            -- BLACKLIST
-            --==================================================
-
-            if BLACKLIST[
-                FruitName
-            ] then
-
-                continue
-
-            end
-
-
-            --==================================================
-            -- SPECIAL FRUIT
-            --
-            -- Maple Bamboo
-            -- Maple Mushroom
-            --
-            -- WAJIB PUNYA MUTATION
-            --==================================================
-
-            if IsMutationRequiredFruit(
-                FruitName
-            ) then
-
-                local Mutation =
-                    Fruit:GetAttribute(
-                        "Mutation"
-                    )
-
-
-                -- Belum mutation
-                if not Mutation then
-
-                    continue
-
-                end
-
-            end
-
-
-            --==================================================
-            -- HARVEST PART
-            --==================================================
-
-            local FruitHarvestPart =
-                Fruit:FindFirstChild(
-                    "HarvestPart"
-                )
-
-
-            if not FruitHarvestPart then
-                continue
-            end
-
-
-            --==================================================
-            -- HARVEST PROMPT
-            --==================================================
-
-            local FruitPrompt =
-                FruitHarvestPart:
-                    FindFirstChild(
-                        "HarvestPrompt"
-                    )
-
-
-            if not FruitPrompt
-                or not FruitPrompt:IsA(
-                    "ProximityPrompt"
-                ) then
-
-                continue
-
-            end
-
-
-            --==================================================
-            -- HARVEST
-            --==================================================
-
-            pcall(function()
-
-                fireproximityprompt(
-                    FruitPrompt
-                )
-
-            end)
-
-
-            task.wait(
-                HARVEST_DELAY
-            )
-
-        end
+        HarvestPlant(
+            Plant
+        )
 
     end
 
@@ -1309,6 +1191,7 @@ end
 
 --==================================================
 -- SORT SEEDS
+-- HIGHEST RARITY FIRST
 --==================================================
 
 local function SortSeeds(
@@ -1343,7 +1226,7 @@ end
 --==================================================
 -- FIND LOWEST REPLACEABLE PLANT
 --
--- GARDEN ATTRIBUTE:
+-- SeedName DIAMBIL LANGSUNG DARI:
 --
 -- Plant:GetAttribute("SeedName")
 --
@@ -1352,10 +1235,6 @@ end
 -- Maple Carrot
 -- Maple Apple
 -- Maple Corn
---
--- BUKAN:
---
--- MapleCarrotSeed
 --==================================================
 
 local function FindLowestReplaceablePlant(
@@ -1373,7 +1252,7 @@ local function FindLowestReplaceablePlant(
     ) do
 
         --==================================================
-        -- LANGSUNG DARI ATTRIBUTE
+        -- ATTRIBUTE SEEDNAME
         --==================================================
 
         local PlantSeedName =
@@ -1388,7 +1267,7 @@ local function FindLowestReplaceablePlant(
 
 
         --==================================================
-        -- RARITY
+        -- GET RARITY
         --==================================================
 
         local PlantRarity,
@@ -1411,8 +1290,8 @@ local function FindLowestReplaceablePlant(
 
 
         --==================================================
-        -- CEK APAKAH ADA SEED YANG
-        -- RARITY-NYA LEBIH TINGGI
+        -- CEK APAKAH ADA SEED
+        -- YANG RARITY-NYA LEBIH TINGGI
         --==================================================
 
         local CanReplace = false
@@ -1596,6 +1475,138 @@ end
 
 
 --==================================================
+-- GET NEXT PLANT POSITION
+--
+-- TIDAK ADA MAX ATTEMPTS
+--
+-- SELAMA MASIH MEMBUTUHKAN POSISI BARU,
+-- AKAN TERUS MENCARI POSISI VALID.
+--==================================================
+
+local function GetNextPlantPosition()
+
+    local BottomFace =
+        GetBottomFace()
+
+
+    if not BottomFace then
+        return nil
+    end
+
+
+    while true do
+
+        --==================================================
+        -- RANDOM ANGLE
+        --==================================================
+
+        local Angle =
+            math.random()
+            * math.pi
+            * 2
+
+
+        --==================================================
+        -- RANDOM RADIUS
+        --==================================================
+
+        local Radius =
+            math.sqrt(
+                math.random()
+            )
+            * RADIUS
+
+
+        --==================================================
+        -- RANDOM HEIGHT
+        --==================================================
+
+        local Height =
+            math.random()
+            * MAX_HEIGHT
+
+
+        --==================================================
+        -- LOCAL POSITION
+        --==================================================
+
+        local LocalPos =
+            Vector3.new(
+
+                math.cos(
+                    Angle
+                )
+                * Radius,
+
+                Height,
+
+                math.sin(
+                    Angle
+                )
+                * Radius
+
+            )
+
+
+        --==================================================
+        -- WORLD POSITION
+        --==================================================
+
+        local WorldPos =
+            BottomFace.CFrame:
+                PointToWorldSpace(
+                    LocalPos
+                )
+
+
+        --==================================================
+        -- CHECK DISTANCE
+        --==================================================
+
+        local Valid = true
+
+
+        for _, Position in ipairs(
+            UsedPositions
+        ) do
+
+            if (
+                Position
+                - WorldPos
+            ).Magnitude
+                < MIN_DISTANCE then
+
+                Valid = false
+
+                break
+
+            end
+
+        end
+
+
+        --==================================================
+        -- POSITION VALID
+        --==================================================
+
+        if Valid then
+
+            table.insert(
+                UsedPositions,
+                WorldPos
+            )
+
+
+            return WorldPos
+
+        end
+
+    end
+
+end
+
+
+--==================================================
 -- PLANT SEED
 --==================================================
 
@@ -1653,7 +1664,7 @@ local function PlantSeed(
 
 
     --==================================================
-    -- CHECK TOOL
+    -- TOOL HARUS VALID
     --==================================================
 
     if Tool.Parent ~= Character
@@ -1674,7 +1685,9 @@ local function PlantSeed(
             Character
 
 
-        task.wait(0.1)
+        task.wait(
+            0.1
+        )
 
     end
 
@@ -1695,50 +1708,16 @@ local function PlantSeed(
 
 
     --==================================================
-    -- AREA
+    -- GET NEXT POSITION
     --==================================================
-
-    local BottomFace =
-        GetBottomFace()
-
-
-    if not BottomFace then
-        return false
-    end
-
-
-    --==================================================
-    -- RANDOM POSITION
-    --==================================================
-
-    local Margin = 0.5
-
-
-    local X =
-        (math.random() - 0.5)
-        * (
-            BottomFace.Size.X
-            - Margin * 2
-        )
-
-
-    local Z =
-        (math.random() - 0.5)
-        * (
-            BottomFace.Size.Z
-            - Margin * 2
-        )
-
 
     local PlantPos =
-        BottomFace.CFrame:
-            PointToWorldSpace(
-                Vector3.new(
-                    X,
-                    0,
-                    Z
-                )
-            )
+        GetNextPlantPosition()
+
+
+    if not PlantPos then
+        return false
+    end
 
 
     --==================================================
@@ -1779,7 +1758,9 @@ end
 --==================================================
 -- SHOVEL PHASE
 --
--- HANYA SHOVEL
+-- FOKUS:
+-- KOSONGKAN SLOT YANG DIPERLUKAN
+-- SEBELUM PLANT
 --==================================================
 
 local function ShovelPhase(
@@ -1794,7 +1775,7 @@ local function ShovelPhase(
 
 
     --==================================================
-    -- HITUNG SEMUA SEED
+    -- HITUNG TOTAL SEED
     --==================================================
 
     for _, SeedData in ipairs(
@@ -1825,7 +1806,7 @@ local function ShovelPhase(
 
 
     --==================================================
-    -- FREE SLOTS
+    -- SLOT KOSONG
     --==================================================
 
     local FreeSlots =
@@ -1836,7 +1817,7 @@ local function ShovelPhase(
 
 
     --==================================================
-    -- JUMLAH YANG PERLU DI-SHOVEL
+    -- BERAPA YANG PERLU DI-SHOVEL
     --==================================================
 
     local ShovelNeeded =
@@ -1864,6 +1845,11 @@ local function ShovelPhase(
     )
 
     print(
+        "Free Slots:",
+        FreeSlots
+    )
+
+    print(
         "Need Shovel:",
         ShovelNeeded
     )
@@ -1879,7 +1865,9 @@ local function ShovelPhase(
             "🔨 Tidak perlu shovel."
         )
 
+
         UnequipTool()
+
 
         return
 
@@ -2015,7 +2003,7 @@ local function ShovelPhase(
 
 
     --==================================================
-    -- UNEQUIP SETELAH SHOVEL
+    -- UNEQUIP
     --==================================================
 
     UnequipTool()
@@ -2035,8 +2023,6 @@ end
 
 --==================================================
 -- PLANT PHASE
---
--- HANYA PLANT
 --==================================================
 
 local function PlantPhase()
@@ -2113,14 +2099,14 @@ local function PlantPhase()
 
 
     --==================================================
-    -- PLANT
+    -- PLANT SETIAP SEED
     --==================================================
 
     for _, SeedData in ipairs(
         ValidSeeds
     ) do
 
-        for i = 1, 100000 do
+        while true do
 
             --==================================================
             -- COUNT TERBARU
@@ -2134,6 +2120,10 @@ local function PlantPhase()
                         )
                 ) or 0
 
+
+            --==================================================
+            -- SEED HABIS
+            --==================================================
 
             if CurrentCount <= 0 then
                 break
@@ -2219,8 +2209,10 @@ end
 --==================================================
 -- SMART PLANT
 --
--- SHOVEL DULU SAMPAI SLOT CUKUP
--- BARU PLANT
+-- 1. SHOVEL DULU
+-- 2. UNEQUIP
+-- 3. PLANT
+-- 4. UNEQUIP
 --==================================================
 
 local function SmartPlant()
@@ -2267,7 +2259,7 @@ local function SmartPlant()
 
 
     --==================================================
-    -- HIGHEST RARITY FIRST
+    -- SORT HIGHEST FIRST
     --==================================================
 
     SortSeeds(
@@ -2355,6 +2347,14 @@ print(
 )
 
 print(
+    "PLANT POSITION: PATTERN"
+)
+
+print(
+    "MAX ATTEMPTS: DISABLED"
+)
+
+print(
     "SEEDNAME: DISPLAY NAME"
 )
 
@@ -2410,22 +2410,19 @@ end)
 --==================================================
 -- MAIN LOOP
 --
--- HANYA:
---
 -- BUY
 -- SHOVEL
 -- PLANT
 --
--- HARVEST DAN SELL TIDAK DI SINI
+-- HARVEST + SELL TETAP JALAN
 --==================================================
 
 while task.wait(
     MAIN_LOOP_DELAY
 ) do
 
-
     --==================================================
-    -- BUY
+    -- BUY ALL SEED
     --==================================================
 
     pcall(function()
@@ -2436,7 +2433,7 @@ while task.wait(
 
 
     --==================================================
-    -- SHOVEL + PLANT
+    -- SMART SHOVEL + PLANT
     --==================================================
 
     pcall(function()
