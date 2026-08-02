@@ -1,3 +1,4 @@
+--V3
 local Players = game:GetService("Players")
 
 local Gardens = workspace:WaitForChild("Gardens")
@@ -46,14 +47,51 @@ local function DestroyRainObject(Obj)
     end
 end
 
--- Hapus yang sudah ada
 for _, Obj in ipairs(workspace:GetChildren()) do
     DestroyRainObject(Obj)
 end
 
--- Hapus kalau muncul lagi
 workspace.ChildAdded:Connect(function(Obj)
     DestroyRainObject(Obj)
+end)
+
+--==================================================
+-- DESTROY OTHER PLAYER OBJECTS
+--==================================================
+
+local function DestroyOtherPlayer(Player)
+
+    if not Player then
+        return
+    end
+
+    if Player == LocalPlayer then
+        return
+    end
+
+    if Player.Parent == Players then
+        print("🗑️ Destroy Player:", Player.Name)
+        Player:Destroy()
+    end
+
+end
+
+-- Player yang sudah ada
+for _, Player in ipairs(Players:GetPlayers()) do
+    DestroyOtherPlayer(Player)
+end
+
+-- Player baru
+Players.PlayerAdded:Connect(function(Player)
+
+    if Player == LocalPlayer then
+        return
+    end
+
+    task.defer(function()
+        DestroyOtherPlayer(Player)
+    end)
+
 end)
 
 --==================================================
@@ -67,28 +105,34 @@ local ProtectedParts = {
 }
 
 --==================================================
--- GET OWNER
+-- GET PLOT OWNER
 --==================================================
 
 local function GetPlotOwner(Plot)
+
     if not Plot then
         return nil
     end
 
     return Plot:GetAttribute("Owner")
+
 end
 
 --==================================================
--- CEK PLOT KITA
+-- CHECK MY PLOT
 --==================================================
 
 local function IsMyPlot(Plot)
+
     return GetPlotOwner(Plot) == LocalPlayer.Name
+
 end
 
 --==================================================
--- DESTROY VISUAL OBJECTS
+-- DESTROY VISUAL
 --==================================================
+
+local VisualConnections = {}
 
 local function DestroyVisualObjects(Visual)
 
@@ -104,15 +148,14 @@ local function DestroyVisualObjects(Visual)
             Obj:Destroy()
 
         end
+
     end
 
 end
 
 --==================================================
--- WATCH VISUAL
+-- SETUP VISUAL
 --==================================================
-
-local VisualConnections = {}
 
 local function SetupVisual(Plot, Visual)
 
@@ -126,20 +169,21 @@ local function SetupVisual(Plot, Visual)
         return
     end
 
-    VisualConnections[Visual] = Visual.DescendantAdded:Connect(function(Obj)
+    VisualConnections[Visual] =
+        Visual.DescendantAdded:Connect(function(Obj)
 
-        if not Obj or not Obj.Parent then
-            return
-        end
+            if not Obj or not Obj.Parent then
+                return
+            end
 
-        if Obj.Name == "FenceConnectors"
-        or Obj.Name == "FencePole" then
+            if Obj.Name == "FenceConnectors"
+            or Obj.Name == "FencePole" then
 
-            Obj:Destroy()
+                Obj:Destroy()
 
-        end
+            end
 
-    end)
+        end)
 
 end
 
@@ -153,13 +197,15 @@ local function DestroyLoadingCams(Plot)
         return
     end
 
-    local LoadingCam = Plot:FindFirstChild("LoadingCam")
+    local LoadingCam =
+        Plot:FindFirstChild("LoadingCam")
 
     if LoadingCam then
         LoadingCam:Destroy()
     end
 
-    local LoadingScreenCam = Plot:FindFirstChild("LoadingScreenCam")
+    local LoadingScreenCam =
+        Plot:FindFirstChild("LoadingScreenCam")
 
     if LoadingScreenCam then
         LoadingScreenCam:Destroy()
@@ -190,7 +236,7 @@ local function CheckPart(Obj)
 end
 
 --==================================================
--- WATCH PLANTS
+-- SETUP PLANTS
 --==================================================
 
 local PlantsConnections = {}
@@ -204,35 +250,34 @@ local function SetupPlants(Plot, Plants)
         return
     end
 
-    -- Pastikan hanya plot kita
     if not IsMyPlot(Plot) then
         return
     end
 
-    -- Hapus part yang sudah ada
+    -- Hapus yang sudah ada
     for _, Obj in ipairs(Plants:GetDescendants()) do
         CheckPart(Obj)
     end
 
-    -- Jangan buat connection dobel
     if PlantsConnections[Plants] then
         return
     end
 
-    PlantsConnections[Plants] = Plants.DescendantAdded:Connect(function(Obj)
+    PlantsConnections[Plants] =
+        Plants.DescendantAdded:Connect(function(Obj)
 
-        if not Plants.Parent then
-            return
-        end
+            if not Plants.Parent then
+                return
+            end
 
-        CheckPart(Obj)
+            CheckPart(Obj)
 
-    end)
+        end)
 
 end
 
 --==================================================
--- SETUP PLOT KITA
+-- SETUP MY PLOT
 --==================================================
 
 local PlotConnections = {}
@@ -254,98 +299,95 @@ local function SetupMyPlot(Plot)
     print("Owner:", Plot:GetAttribute("Owner"))
     print("================================")
 
-    --==================================================
-    -- LOADING CAMERA
-    --==================================================
-
+    -- Loading Camera
     DestroyLoadingCams(Plot)
 
-    --==================================================
-    -- PLANTS
-    --==================================================
-
+    -- Plants
     local Plants = Plot:FindFirstChild("Plants")
 
     if Plants then
         SetupPlants(Plot, Plants)
     end
 
-    --==================================================
-    -- VISUAL
-    --==================================================
-
+    -- Visual
     local Visual = Plot:FindFirstChild("Visual")
 
     if Visual then
         SetupVisual(Plot, Visual)
     end
 
-    --==================================================
-    -- WATCH CHILD
-    --==================================================
-
+    -- ChildAdded hanya sekali
     if PlotConnections[Plot] then
         return
     end
 
-    PlotConnections[Plot] = Plot.ChildAdded:Connect(function(Obj)
+    PlotConnections[Plot] =
+        Plot.ChildAdded:Connect(function(Obj)
 
-        if not Obj or not Obj.Parent then
-            return
-        end
+            if not Obj or not Obj.Parent then
+                return
+            end
 
-        ------------------------------------------------
-        -- LOADING CAM
-        ------------------------------------------------
+            --==================================================
+            -- LOADING CAMERA
+            --==================================================
 
-        if Obj.Name == "LoadingCam"
-        or Obj.Name == "LoadingScreenCam" then
+            if Obj.Name == "LoadingCam"
+            or Obj.Name == "LoadingScreenCam" then
 
-            Obj:Destroy()
-            return
+                Obj:Destroy()
+                return
 
-        end
+            end
 
-        ------------------------------------------------
-        -- PLANTS
-        ------------------------------------------------
+            --==================================================
+            -- PLANTS
+            --==================================================
 
-        if Obj.Name == "Plants" then
+            if Obj.Name == "Plants" then
 
-            task.defer(function()
+                task.defer(function()
 
-                if Plot.Parent and Obj.Parent and IsMyPlot(Plot) then
-                    SetupPlants(Plot, Obj)
-                end
+                    if Plot.Parent
+                    and Obj.Parent
+                    and IsMyPlot(Plot) then
 
-            end)
+                        SetupPlants(Plot, Obj)
 
-            return
-        end
+                    end
 
-        ------------------------------------------------
-        -- VISUAL
-        ------------------------------------------------
+                end)
 
-        if Obj.Name == "Visual" then
+                return
+            end
 
-            task.defer(function()
+            --==================================================
+            -- VISUAL
+            --==================================================
 
-                if Plot.Parent and Obj.Parent and IsMyPlot(Plot) then
-                    SetupVisual(Plot, Obj)
-                end
+            if Obj.Name == "Visual" then
 
-            end)
+                task.defer(function()
 
-            return
-        end
+                    if Plot.Parent
+                    and Obj.Parent
+                    and IsMyPlot(Plot) then
 
-    end)
+                        SetupVisual(Plot, Obj)
+
+                    end
+
+                end)
+
+                return
+            end
+
+        end)
 
 end
 
 --==================================================
--- DESTROY PLOT ORANG
+-- DESTROY OTHER PLOT
 --==================================================
 
 local function DestroyOtherPlot(Plot)
@@ -375,10 +417,54 @@ local function DestroyOtherPlot(Plot)
 end
 
 --==================================================
--- PROCESS PLOT
+-- OWNER CONNECTION
 --==================================================
 
-local ProcessedOwnerConnections = {}
+local OwnerConnections = {}
+
+local function SetupOwnerListener(Plot)
+
+    if OwnerConnections[Plot] then
+        return
+    end
+
+    OwnerConnections[Plot] =
+        Plot:GetAttributeChangedSignal("Owner"):Connect(function()
+
+            if not Plot.Parent then
+                return
+            end
+
+            local Owner = GetPlotOwner(Plot)
+
+            print(
+                "🔄 OWNER BERUBAH:",
+                Plot.Name,
+                "=>",
+                tostring(Owner)
+            )
+
+            if not Owner then
+                return
+            end
+
+            if Owner == LocalPlayer.Name then
+
+                SetupMyPlot(Plot)
+
+            else
+
+                DestroyOtherPlot(Plot)
+
+            end
+
+        end)
+
+end
+
+--==================================================
+-- PROCESS PLOT
+--==================================================
 
 local function ProcessPlot(Plot)
 
@@ -387,6 +473,8 @@ local function ProcessPlot(Plot)
     or not Plot:IsA("Model") then
         return
     end
+
+    SetupOwnerListener(Plot)
 
     local Owner = GetPlotOwner(Plot)
 
@@ -398,7 +486,6 @@ local function ProcessPlot(Plot)
 
         print("⏳ Menunggu Owner:", Plot.Name)
 
-        -- Tunggu Owner sampai terisi
         task.spawn(function()
 
             local StartTime = os.clock()
@@ -417,7 +504,7 @@ local function ProcessPlot(Plot)
 
             local NewOwner = GetPlotOwner(Plot)
 
-            if NewOwner == nil then
+            if not NewOwner then
                 print("⚠️ Owner masih nil:", Plot.Name)
                 return
             end
@@ -455,51 +542,10 @@ local function ProcessPlot(Plot)
 
     end
 
-    --==================================================
-    -- OWNER BERUBAH
-    --==================================================
-
-    if not ProcessedOwnerConnections[Plot] then
-
-        ProcessedOwnerConnections[Plot] = true
-
-        Plot:GetAttributeChangedSignal("Owner"):Connect(function()
-
-            if not Plot.Parent then
-                return
-            end
-
-            local NewOwner = GetPlotOwner(Plot)
-
-            print(
-                "🔄 OWNER BERUBAH:",
-                Plot.Name,
-                "=>",
-                tostring(NewOwner)
-            )
-
-            if NewOwner == nil then
-                return
-            end
-
-            if NewOwner == LocalPlayer.Name then
-
-                SetupMyPlot(Plot)
-
-            else
-
-                DestroyOtherPlot(Plot)
-
-            end
-
-        end)
-
-    end
-
 end
 
 --==================================================
--- PROCESS PLOT YANG SUDAH ADA
+-- PROCESS EXISTING PLOTS
 --==================================================
 
 for _, Plot in ipairs(Gardens:GetChildren()) do
@@ -511,7 +557,7 @@ for _, Plot in ipairs(Gardens:GetChildren()) do
 end
 
 --==================================================
--- PLOT BARU MASUK
+-- NEW PLOT
 --==================================================
 
 Gardens.ChildAdded:Connect(function(Plot)
@@ -533,12 +579,28 @@ Gardens.ChildAdded:Connect(function(Plot)
 end)
 
 --==================================================
--- CONTINUOUS CHECK
+-- CONTINUOUS CLEANER
 --==================================================
 
 task.spawn(function()
 
     while true do
+
+        --==================================================
+        -- CLEAN OTHER PLAYERS
+        --==================================================
+
+        for _, Player in ipairs(Players:GetPlayers()) do
+
+            if Player ~= LocalPlayer then
+                DestroyOtherPlayer(Player)
+            end
+
+        end
+
+        --==================================================
+        -- CLEAN PLOTS
+        --==================================================
 
         for _, Plot in ipairs(Gardens:GetChildren()) do
 
@@ -547,7 +609,7 @@ task.spawn(function()
                 local Owner = GetPlotOwner(Plot)
 
                 --==================================================
-                -- OWNER SUDAH DIKENAL
+                -- OWNER DIKENAL
                 --==================================================
 
                 if Owner then
@@ -560,10 +622,12 @@ task.spawn(function()
                     -- Plot kita
                     else
 
+                        -- Loading Camera
                         DestroyLoadingCams(Plot)
 
                         -- Visual
-                        local Visual = Plot:FindFirstChild("Visual")
+                        local Visual =
+                            Plot:FindFirstChild("Visual")
 
                         if Visual then
                             DestroyVisualObjects(Visual)
@@ -571,15 +635,23 @@ task.spawn(function()
                         end
 
                         -- Plants
-                        local Plants = Plot:FindFirstChild("Plants")
+                        local Plants =
+                            Plot:FindFirstChild("Plants")
 
                         if Plants then
 
-                            for _, Obj in ipairs(Plants:GetDescendants()) do
+                            for _, Obj in ipairs(
+                                Plants:GetDescendants()
+                            ) do
+
                                 CheckPart(Obj)
+
                             end
 
-                            SetupPlants(Plot, Plants)
+                            SetupPlants(
+                                Plot,
+                                Plants
+                            )
 
                         end
 
@@ -598,6 +670,8 @@ task.spawn(function()
 end)
 
 print("================================")
-print("✅ PLOT CLEANER AKTIF")
+print("✅ CLEANER AKTIF")
 print("Player:", LocalPlayer.Name)
+print("Plot Cleaner: ON")
+print("Player Cleaner: ON")
 print("================================")
