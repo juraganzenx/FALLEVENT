@@ -1,0 +1,2448 @@
+--KAITUNFALLEVENT V2
+
+-- AUTO KAITUN
+--==================================================
+-- AUTO BUY
+-- AUTO HARVEST (INDEPENDENT)
+-- AUTO SELL ALL (INDEPENDENT)
+-- SMART SHOVEL
+-- AUTO PLANT
+--
+-- MAX 200 PLANTS
+--
+-- HARVEST + SELL TIDAK MENUNGGU
+-- BUY / SHOVEL / PLANT
+--==================================================
+
+
+--==================================================
+-- SERVICES
+--==================================================
+
+local Players =
+    game:GetService("Players")
+
+local ReplicatedStorage =
+    game:GetService("ReplicatedStorage")
+
+
+--==================================================
+-- PLAYER
+--==================================================
+
+local LocalPlayer =
+    Players.LocalPlayer
+
+
+--==================================================
+-- CHARACTER
+--==================================================
+
+if not LocalPlayer.Character then
+    LocalPlayer.CharacterAdded:Wait()
+end
+
+LocalPlayer.Character:WaitForChild(
+    "HumanoidRootPart"
+)
+
+
+--==================================================
+-- NETWORKING
+--==================================================
+
+local SharedModules =
+    ReplicatedStorage:WaitForChild(
+        "SharedModules"
+    )
+
+local Networking =
+    require(
+        SharedModules:WaitForChild(
+            "Networking"
+        )
+    )
+
+
+--==================================================
+-- WAIT NETWORKING
+--==================================================
+
+repeat
+    task.wait()
+until Networking
+    and Networking.SeedShop
+    and Networking.Plant
+    and Networking.Shovel
+    and Networking.NPCS
+    and Networking.NPCS.PreviewSellAll
+    and Networking.NPCS.SellAll
+
+
+--==================================================
+-- GARDENS
+--==================================================
+
+local Gardens =
+    workspace:WaitForChild(
+        "Gardens"
+    )
+
+
+--==================================================
+-- CONFIG
+--==================================================
+
+local MAX_PLANTS = 200
+
+local BUY_DELAY = 0.05
+
+local HARVEST_DELAY = 0.001
+
+local HARVEST_LOOP_DELAY = 0.2
+
+local SELL_LOOP_DELAY = 2
+
+local ACTION_DELAY = 0.15
+
+local MAIN_LOOP_DELAY = 0.5
+
+
+--==================================================
+-- RARITY ORDER
+--==================================================
+
+local RARITY_ORDER = {
+
+    Common = 1,
+
+    Uncommon = 2,
+
+    Rare = 3,
+
+    Epic = 4,
+
+    Legendary = 5,
+
+    Mythic = 6,
+
+    Super = 7,
+
+}
+
+
+--==================================================
+-- SEED RARITY
+--
+-- SEMUA NAMA ADALAH DISPLAY NAME
+--
+-- Garden Attribute SeedName:
+--
+-- Maple Carrot
+-- Maple Strawberry
+-- Maple Dragon Fruit
+--
+-- TIDAK PERNAH:
+--
+-- MapleCarrotSeed
+-- MapleDragonFruitSeed
+--==================================================
+
+local SEED_RARITY = {
+
+    --==================================================
+    -- COMMON
+    --==================================================
+
+    ["Maple Carrot"] =
+        "Common",
+
+    ["Maple Strawberry"] =
+        "Common",
+
+    ["Maple Blueberry"] =
+        "Common",
+
+
+    --==================================================
+    -- UNCOMMON
+    --==================================================
+
+    ["Maple Tulip"] =
+        "Uncommon",
+
+    ["Maple Tomato"] =
+        "Uncommon",
+
+    ["Maple Apple"] =
+        "Uncommon",
+
+
+    --==================================================
+    -- RARE
+    --==================================================
+
+    ["Maple Bamboo"] =
+        "Rare",
+
+    ["Maple Corn"] =
+        "Rare",
+
+    ["Maple Cactus"] =
+        "Rare",
+
+    ["Maple Pineapple"] =
+        "Rare",
+
+
+    --==================================================
+    -- EPIC
+    --==================================================
+
+    ["Maple Mushroom"] =
+        "Epic",
+
+    ["Maple Green Bean"] =
+        "Epic",
+
+    ["Maple Banana"] =
+        "Epic",
+
+    ["Maple Grape"] =
+        "Epic",
+
+    ["Maple Coconut"] =
+        "Epic",
+
+    ["Maple Mango"] =
+        "Epic",
+
+
+    --==================================================
+    -- LEGENDARY
+    --==================================================
+
+    ["Maple Dragon Fruit"] =
+        "Legendary",
+
+    ["Atlantic Giant Pumpkin"] =
+        "Legendary",
+
+    ["Maple Acorn"] =
+        "Legendary",
+
+    ["Maple Cherry"] =
+        "Legendary",
+
+    ["Maple Sunflower"] =
+        "Legendary",
+
+
+    --==================================================
+    -- MYTHIC
+    --==================================================
+
+    ["Maple Venus Fly Trap"] =
+        "Mythic",
+
+    ["Maple Pomegranate"] =
+        "Mythic",
+
+    ["Maple Poison Apple"] =
+        "Mythic",
+
+    ["Maple Venom Spitter"] =
+        "Mythic",
+
+    ["Conifer Cone"] =
+        "Mythic",
+
+
+    --==================================================
+    -- SUPER
+    --==================================================
+
+    ["Amber Cranberry"] =
+        "Super",
+
+}
+
+
+--==================================================
+-- BLACKLIST FRUIT
+--==================================================
+
+local BLACKLIST = {
+
+    NAMEFRUIT = true,
+
+}
+
+
+--==================================================
+-- GET RARITY
+--
+-- INPUT:
+--
+-- Maple Carrot
+--
+-- OUTPUT:
+--
+-- Common
+-- 1
+--==================================================
+
+local function GetRarityFromSeedName(
+    Name
+)
+
+    if not Name then
+        return nil, 0
+    end
+
+
+    Name =
+        tostring(Name)
+
+
+    local Rarity =
+        SEED_RARITY[Name]
+
+
+    if not Rarity then
+        return nil, 0
+    end
+
+
+    return Rarity,
+        RARITY_ORDER[Rarity] or 0
+
+end
+
+
+--==================================================
+-- GET MY PLOT
+--==================================================
+
+local function GetMyPlot()
+
+    for i = 1, 8 do
+
+        local Plot =
+            Gardens:FindFirstChild(
+                "Plot" .. i
+            )
+
+
+        if Plot
+            and Plot:GetAttribute(
+                "Owner"
+            ) == LocalPlayer.Name then
+
+            return Plot
+
+        end
+
+    end
+
+
+    return nil
+
+end
+
+
+--==================================================
+-- GET PLANTS
+--==================================================
+
+local function GetPlants()
+
+    local Plot =
+        GetMyPlot()
+
+
+    if not Plot then
+        return {}
+    end
+
+
+    local Plants =
+        Plot:FindFirstChild(
+            "Plants"
+        )
+
+
+    if not Plants then
+        return {}
+    end
+
+
+    return Plants:GetChildren()
+
+end
+
+
+--==================================================
+-- COUNT PLANTS
+--==================================================
+
+local function CountPlants()
+
+    return #GetPlants()
+
+end
+
+
+--==================================================
+-- UNEQUIP
+--==================================================
+
+local function UnequipTool()
+
+    local Character =
+        LocalPlayer.Character
+
+
+    if not Character then
+        return
+    end
+
+
+    local Humanoid =
+        Character:FindFirstChildOfClass(
+            "Humanoid"
+        )
+
+
+    if Humanoid then
+
+        pcall(function()
+
+            Humanoid:UnequipTools()
+
+        end)
+
+    end
+
+end
+
+
+--==================================================
+-- GET SHOVEL
+--==================================================
+
+local function GetShovel()
+
+    local Character =
+        LocalPlayer.Character
+
+
+    if not Character then
+        return nil
+    end
+
+
+    for _, Tool in ipairs(
+        Character:GetChildren()
+    ) do
+
+        if Tool:IsA("Tool")
+            and Tool:GetAttribute(
+                "Shovel"
+            ) then
+
+            return Tool
+
+        end
+
+    end
+
+
+    return nil
+
+end
+
+
+--==================================================
+-- EQUIP SHOVEL
+--==================================================
+
+local function EquipShovel()
+
+    local Character =
+        LocalPlayer.Character
+
+
+    local Backpack =
+        LocalPlayer:FindFirstChild(
+            "Backpack"
+        )
+
+
+    if not Character
+        or not Backpack then
+
+        return nil
+
+    end
+
+
+    --==================================================
+    -- SUDAH EQUIP
+    --==================================================
+
+    local Shovel =
+        GetShovel()
+
+
+    if Shovel then
+        return Shovel
+    end
+
+
+    --==================================================
+    -- CARI BACKPACK
+    --==================================================
+
+    for _, Tool in ipairs(
+        Backpack:GetChildren()
+    ) do
+
+        if Tool:IsA("Tool")
+            and Tool:GetAttribute(
+                "Shovel"
+            ) then
+
+            Tool.Parent =
+                Character
+
+
+            task.wait(0.1)
+
+
+            return Tool
+
+        end
+
+    end
+
+
+    return nil
+
+end
+
+
+--==================================================
+-- GET SEED TOOLS
+--==================================================
+
+local function GetSeedTools()
+
+    local Character =
+        LocalPlayer.Character
+
+
+    local Backpack =
+        LocalPlayer:FindFirstChild(
+            "Backpack"
+        )
+
+
+    local Result = {}
+
+
+    if not Backpack then
+        return Result
+    end
+
+
+    local function Scan(
+        Container
+    )
+
+        for _, Tool in ipairs(
+            Container:GetChildren()
+        ) do
+
+            if not Tool:IsA("Tool") then
+                continue
+            end
+
+
+            --==================================================
+            -- SEED TOOL
+            --==================================================
+
+            local SeedTool =
+                Tool:GetAttribute(
+                    "SeedTool"
+                )
+
+
+            if not SeedTool then
+                continue
+            end
+
+
+            --==================================================
+            -- NAMA DISPLAY
+            --
+            -- CONTOH:
+            --
+            -- Maple Carrot
+            --==================================================
+
+            local SeedName =
+                Tool.Name
+
+
+            --==================================================
+            -- RARITY
+            --==================================================
+
+            local Rarity,
+                RarityValue =
+                GetRarityFromSeedName(
+                    SeedName
+                )
+
+
+            --==================================================
+            -- COUNT
+            --==================================================
+
+            local Count =
+                tonumber(
+                    Tool:GetAttribute(
+                        "Count"
+                    )
+                ) or 0
+
+
+            if Count > 0 then
+
+                table.insert(
+                    Result,
+                    {
+
+                        Tool =
+                            Tool,
+
+                        SeedName =
+                            SeedName,
+
+                        SeedTool =
+                            SeedTool,
+
+                        Count =
+                            Count,
+
+                        Rarity =
+                            Rarity,
+
+                        RarityValue =
+                            RarityValue,
+
+                    }
+                )
+
+            end
+
+        end
+
+    end
+
+
+    -- BACKPACK
+    Scan(
+        Backpack
+    )
+
+
+    -- CHARACTER
+    if Character then
+
+        Scan(
+            Character
+        )
+
+    end
+
+
+    return Result
+
+end
+
+
+--==================================================
+-- SEED SHOP
+--==================================================
+
+local SeedShop =
+    LocalPlayer.PlayerGui:
+        WaitForChild(
+            "SeedShop"
+        )
+
+
+local NormalShop =
+    SeedShop.Frame.NormalShop
+
+
+--==================================================
+-- GET STOCK
+--==================================================
+
+local function GetStock(
+    SeedFrame
+)
+
+    local MainFrame =
+        SeedFrame:FindFirstChild(
+            "Main_Frame"
+        )
+
+
+    if not MainFrame then
+        return 0
+    end
+
+
+    local StockText =
+        MainFrame:FindFirstChild(
+            "Stock_Text"
+        )
+
+
+    if not StockText then
+        return 0
+    end
+
+
+    local StockAmount =
+        tonumber(
+            string.match(
+                StockText.Text,
+                "x(%d+)"
+            )
+        )
+
+
+    return StockAmount or 0
+
+end
+
+
+--==================================================
+-- BUY ALL SEEDS
+--==================================================
+
+local function BuyAllSeeds()
+
+    for _, SeedFrame in ipairs(
+        NormalShop:GetChildren()
+    ) do
+
+        if SeedFrame:IsA("Frame") then
+
+            local SeedName =
+                SeedFrame.Name
+
+
+            local Stock =
+                GetStock(
+                    SeedFrame
+                )
+
+
+            if Stock > 0 then
+
+                pcall(function()
+
+                    Networking.SeedShop
+                        .PurchaseSeed
+                        :Fire(
+                            SeedName
+                        )
+
+                end)
+
+
+                task.wait(
+                    BUY_DELAY
+                )
+
+            end
+
+        end
+
+    end
+
+end
+
+
+--==================================================
+-- HARVEST ONE PLANT
+--==================================================
+
+local function HarvestPlant(
+    Plant
+)
+
+    if not Plant then
+        return 0
+    end
+
+
+    local Harvested = 0
+
+
+    --==================================================
+    -- PLANT HARVEST
+    --==================================================
+
+    local HarvestPart =
+        Plant:FindFirstChild(
+            "HarvestPart"
+        )
+
+
+    if HarvestPart then
+
+        local HarvestPrompt =
+            HarvestPart:FindFirstChild(
+                "HarvestPrompt"
+            )
+
+
+        if HarvestPrompt
+            and HarvestPrompt:IsA(
+                "ProximityPrompt"
+            ) then
+
+            pcall(function()
+
+                fireproximityprompt(
+                    HarvestPrompt
+                )
+
+            end)
+
+
+            Harvested += 1
+
+
+            task.wait(
+                HARVEST_DELAY
+            )
+
+        end
+
+    end
+
+
+    --==================================================
+    -- FRUITS
+    --==================================================
+
+    local Fruits =
+        Plant:FindFirstChild(
+            "Fruits"
+        )
+
+
+    if not Fruits then
+        return Harvested
+    end
+
+
+    --==================================================
+    -- MUTATION FIRST
+    --==================================================
+
+    for _, Fruit in ipairs(
+        Fruits:GetChildren()
+    ) do
+
+        if not Fruit:GetAttribute(
+            "Mutation"
+        ) then
+
+            continue
+
+        end
+
+
+        local CorePartName =
+            Fruit:GetAttribute(
+                "CorePartName"
+            )
+
+
+        if BLACKLIST[
+            CorePartName
+        ] then
+
+            continue
+
+        end
+
+
+        local FruitHarvestPart =
+            Fruit:FindFirstChild(
+                "HarvestPart"
+            )
+
+
+        if FruitHarvestPart then
+
+            local FruitPrompt =
+                FruitHarvestPart:
+                    FindFirstChild(
+                        "HarvestPrompt"
+                    )
+
+
+            if FruitPrompt
+                and FruitPrompt:IsA(
+                    "ProximityPrompt"
+                ) then
+
+                pcall(function()
+
+                    fireproximityprompt(
+                        FruitPrompt
+                    )
+
+                end)
+
+
+                Harvested += 1
+
+
+                task.wait(
+                    HARVEST_DELAY
+                )
+
+            end
+
+        end
+
+    end
+
+
+    --==================================================
+    -- NORMAL FRUIT
+    --==================================================
+
+    for _, Fruit in ipairs(
+        Fruits:GetChildren()
+    ) do
+
+        if Fruit:GetAttribute(
+            "Mutation"
+        ) then
+
+            continue
+
+        end
+
+
+        local CorePartName =
+            Fruit:GetAttribute(
+                "CorePartName"
+            )
+
+
+        if BLACKLIST[
+            CorePartName
+        ] then
+
+            continue
+
+        end
+
+
+        local FruitHarvestPart =
+            Fruit:FindFirstChild(
+                "HarvestPart"
+            )
+
+
+        if FruitHarvestPart then
+
+            local FruitPrompt =
+                FruitHarvestPart:
+                    FindFirstChild(
+                        "HarvestPrompt"
+                    )
+
+
+            if FruitPrompt
+                and FruitPrompt:IsA(
+                    "ProximityPrompt"
+                ) then
+
+                pcall(function()
+
+                    fireproximityprompt(
+                        FruitPrompt
+                    )
+
+                end)
+
+
+                Harvested += 1
+
+
+                task.wait(
+                    HARVEST_DELAY
+                )
+
+            end
+
+        end
+
+    end
+
+
+    return Harvested
+
+end
+
+
+--==================================================
+-- SPECIAL MUTATION FRUIT
+--
+-- Fruit ini WAJIB memiliki Attribute Mutation
+-- sebelum boleh di-harvest.
+--==================================================
+
+local MUTATION_REQUIRED_FRUITS = {
+
+    ["Maple Bamboo"] = true,
+    ["Maple Mushroom"] = true,
+
+}
+
+
+--==================================================
+-- CHECK SPECIAL FRUIT
+--==================================================
+
+local function IsMutationRequiredFruit(
+    FruitName
+)
+
+    return MUTATION_REQUIRED_FRUITS[
+        FruitName
+    ] == true
+
+end
+
+
+--==================================================
+-- AUTO HARVEST
+--==================================================
+
+local function AutoHarvest()
+
+    local Plot =
+        GetMyPlot()
+
+
+    if not Plot then
+        return
+    end
+
+
+    local Plants =
+        Plot:FindFirstChild(
+            "Plants"
+        )
+
+
+    if not Plants then
+        return
+    end
+
+
+    for _, Plant in ipairs(
+        Plants:GetChildren()
+    ) do
+
+
+        --==================================================
+        -- HARVEST PLANT
+        --==================================================
+
+        local HarvestPart =
+            Plant:FindFirstChild(
+                "HarvestPart"
+            )
+
+
+        if HarvestPart then
+
+            local HarvestPrompt =
+                HarvestPart:FindFirstChild(
+                    "HarvestPrompt"
+                )
+
+
+            if HarvestPrompt
+                and HarvestPrompt:IsA(
+                    "ProximityPrompt"
+                ) then
+
+                pcall(function()
+
+                    fireproximityprompt(
+                        HarvestPrompt
+                    )
+
+                end)
+
+
+                task.wait(
+                    HARVEST_DELAY
+                )
+
+            end
+
+        end
+
+
+        --==================================================
+        -- FRUITS
+        --==================================================
+
+        local Fruits =
+            Plant:FindFirstChild(
+                "Fruits"
+            )
+
+
+        if not Fruits then
+            continue
+        end
+
+
+        for _, Fruit in ipairs(
+            Fruits:GetChildren()
+        ) do
+
+
+            --==================================================
+            -- FRUIT NAME
+            --
+            -- Prioritas:
+            -- CorePartName
+            --
+            -- Contoh:
+            -- Maple Bamboo
+            -- Maple Mushroom
+            --==================================================
+
+            local FruitName =
+                Fruit:GetAttribute(
+                    "CorePartName"
+                )
+
+
+            if not FruitName then
+
+                FruitName =
+                    Fruit.Name
+
+            end
+
+
+            --==================================================
+            -- BLACKLIST
+            --==================================================
+
+            if BLACKLIST[
+                FruitName
+            ] then
+
+                continue
+
+            end
+
+
+            --==================================================
+            -- SPECIAL FRUIT
+            --
+            -- Maple Bamboo
+            -- Maple Mushroom
+            --
+            -- WAJIB PUNYA MUTATION
+            --==================================================
+
+            if IsMutationRequiredFruit(
+                FruitName
+            ) then
+
+                local Mutation =
+                    Fruit:GetAttribute(
+                        "Mutation"
+                    )
+
+
+                -- Belum mutation
+                if not Mutation then
+
+                    continue
+
+                end
+
+            end
+
+
+            --==================================================
+            -- HARVEST PART
+            --==================================================
+
+            local FruitHarvestPart =
+                Fruit:FindFirstChild(
+                    "HarvestPart"
+                )
+
+
+            if not FruitHarvestPart then
+                continue
+            end
+
+
+            --==================================================
+            -- HARVEST PROMPT
+            --==================================================
+
+            local FruitPrompt =
+                FruitHarvestPart:
+                    FindFirstChild(
+                        "HarvestPrompt"
+                    )
+
+
+            if not FruitPrompt
+                or not FruitPrompt:IsA(
+                    "ProximityPrompt"
+                ) then
+
+                continue
+
+            end
+
+
+            --==================================================
+            -- HARVEST
+            --==================================================
+
+            pcall(function()
+
+                fireproximityprompt(
+                    FruitPrompt
+                )
+
+            end)
+
+
+            task.wait(
+                HARVEST_DELAY
+            )
+
+        end
+
+    end
+
+end
+
+
+--==================================================
+-- SELL ALL
+--==================================================
+
+local function SellAll()
+
+    local Success,
+        Preview =
+        pcall(function()
+
+            return Networking.NPCS
+                .PreviewSellAll
+                :Fire()
+
+        end)
+
+
+    if not Success
+        or not Preview then
+
+        return
+
+    end
+
+
+    local FruitCount =
+        tonumber(
+            Preview.FruitCount
+        ) or 0
+
+
+    if FruitCount <= 0 then
+        return
+    end
+
+
+    pcall(function()
+
+        Networking.NPCS
+            .SellAll
+            :Fire()
+
+    end)
+
+end
+
+
+--==================================================
+-- SORT SEEDS
+--==================================================
+
+local function SortSeeds(
+    Seeds
+)
+
+    table.sort(
+        Seeds,
+        function(A, B)
+
+            if A.RarityValue
+                == B.RarityValue then
+
+                return A.SeedName
+                    < B.SeedName
+
+            end
+
+
+            return A.RarityValue
+                > B.RarityValue
+
+        end
+    )
+
+
+    return Seeds
+
+end
+
+
+--==================================================
+-- FIND LOWEST REPLACEABLE PLANT
+--
+-- GARDEN ATTRIBUTE:
+--
+-- Plant:GetAttribute("SeedName")
+--
+-- CONTOH:
+--
+-- Maple Carrot
+-- Maple Apple
+-- Maple Corn
+--
+-- BUKAN:
+--
+-- MapleCarrotSeed
+--==================================================
+
+local function FindLowestReplaceablePlant(
+    ValidSeeds
+)
+
+    local LowestPlant = nil
+
+    local LowestRarityValue =
+        math.huge
+
+
+    for _, Plant in ipairs(
+        GetPlants()
+    ) do
+
+        --==================================================
+        -- LANGSUNG DARI ATTRIBUTE
+        --==================================================
+
+        local PlantSeedName =
+            Plant:GetAttribute(
+                "SeedName"
+            )
+
+
+        if not PlantSeedName then
+            continue
+        end
+
+
+        --==================================================
+        -- RARITY
+        --==================================================
+
+        local PlantRarity,
+            PlantRarityValue =
+            GetRarityFromSeedName(
+                PlantSeedName
+            )
+
+
+        if not PlantRarity then
+
+            warn(
+                "⚠️ Unknown SeedName:",
+                PlantSeedName
+            )
+
+            continue
+
+        end
+
+
+        --==================================================
+        -- CEK APAKAH ADA SEED YANG
+        -- RARITY-NYA LEBIH TINGGI
+        --==================================================
+
+        local CanReplace = false
+
+
+        for _, SeedData in ipairs(
+            ValidSeeds
+        ) do
+
+            if SeedData.RarityValue
+                > PlantRarityValue then
+
+                CanReplace = true
+
+                break
+
+            end
+
+        end
+
+
+        if not CanReplace then
+            continue
+        end
+
+
+        --==================================================
+        -- PILIH RARITY TERENDAH
+        --==================================================
+
+        if PlantRarityValue
+            < LowestRarityValue then
+
+            LowestPlant =
+                Plant
+
+            LowestRarityValue =
+                PlantRarityValue
+
+        end
+
+    end
+
+
+    return LowestPlant,
+        LowestRarityValue
+
+end
+
+
+--==================================================
+-- SHOVEL PLANT
+--==================================================
+
+local function ShovelPlant(
+    Plant
+)
+
+    if not Plant then
+        return false
+    end
+
+
+    local PlantId =
+        Plant:GetAttribute(
+            "PlantId"
+        )
+
+
+    if not PlantId then
+        return false
+    end
+
+
+    local Shovel =
+        EquipShovel()
+
+
+    if not Shovel then
+
+        warn(
+            "❌ Shovel tidak ditemukan"
+        )
+
+        return false
+
+    end
+
+
+    local ShovelType =
+        Shovel:GetAttribute(
+            "Shovel"
+        )
+
+
+    if not ShovelType then
+        return false
+    end
+
+
+    local Success =
+        pcall(function()
+
+            Networking.Shovel
+                .UseShovel
+                :Fire(
+                    PlantId,
+                    "",
+                    ShovelType,
+                    Shovel
+                )
+
+        end)
+
+
+    if Success then
+
+        task.wait(
+            ACTION_DELAY
+        )
+
+    end
+
+
+    return Success
+
+end
+
+
+--==================================================
+-- GET BOTTOM FACE
+--==================================================
+
+local function GetBottomFace()
+
+    local Plot =
+        GetMyPlot()
+
+
+    if not Plot then
+        return nil
+    end
+
+
+    local Visual =
+        Plot:FindFirstChild(
+            "Visual"
+        )
+
+
+    if not Visual then
+        return nil
+    end
+
+
+    local BedSection =
+        Visual:FindFirstChild(
+            "FRONT_BedSection"
+        )
+
+
+    if not BedSection then
+        return nil
+    end
+
+
+    local BottomFace =
+        BedSection:FindFirstChild(
+            "BottomFace"
+        )
+
+
+    if not BottomFace then
+        return nil
+    end
+
+
+    return BottomFace
+
+end
+
+
+--==================================================
+-- PLANT SEED
+--==================================================
+
+local function PlantSeed(
+    SeedData
+)
+
+    if not SeedData then
+        return false
+    end
+
+
+    local Tool =
+        SeedData.Tool
+
+
+    if not Tool then
+        return false
+    end
+
+
+    local Character =
+        LocalPlayer.Character
+
+
+    local Backpack =
+        LocalPlayer:FindFirstChild(
+            "Backpack"
+        )
+
+
+    if not Character
+        or not Backpack then
+
+        return false
+
+    end
+
+
+    --==================================================
+    -- COUNT TERBARU
+    --==================================================
+
+    local CurrentCount =
+        tonumber(
+            Tool:GetAttribute(
+                "Count"
+            )
+        ) or 0
+
+
+    if CurrentCount <= 0 then
+        return false
+    end
+
+
+    --==================================================
+    -- CHECK TOOL
+    --==================================================
+
+    if Tool.Parent ~= Character
+        and Tool.Parent ~= Backpack then
+
+        return false
+
+    end
+
+
+    --==================================================
+    -- EQUIP
+    --==================================================
+
+    if Tool.Parent ~= Character then
+
+        Tool.Parent =
+            Character
+
+
+        task.wait(0.1)
+
+    end
+
+
+    --==================================================
+    -- SEED TOOL
+    --==================================================
+
+    local SeedTool =
+        Tool:GetAttribute(
+            "SeedTool"
+        )
+
+
+    if not SeedTool then
+        return false
+    end
+
+
+    --==================================================
+    -- AREA
+    --==================================================
+
+    local BottomFace =
+        GetBottomFace()
+
+
+    if not BottomFace then
+        return false
+    end
+
+
+    --==================================================
+    -- RANDOM POSITION
+    --==================================================
+
+    local Margin = 0.5
+
+
+    local X =
+        (math.random() - 0.5)
+        * (
+            BottomFace.Size.X
+            - Margin * 2
+        )
+
+
+    local Z =
+        (math.random() - 0.5)
+        * (
+            BottomFace.Size.Z
+            - Margin * 2
+        )
+
+
+    local PlantPos =
+        BottomFace.CFrame:
+            PointToWorldSpace(
+                Vector3.new(
+                    X,
+                    0,
+                    Z
+                )
+            )
+
+
+    --==================================================
+    -- PLANT
+    --==================================================
+
+    local Success =
+        pcall(function()
+
+            Networking.Plant
+                .PlantSeed
+                :Fire(
+                    PlantPos,
+                    SeedTool,
+                    Tool
+                )
+
+        end)
+
+
+    if Success then
+
+        task.wait(
+            ACTION_DELAY
+        )
+
+
+        return true
+
+    end
+
+
+    return false
+
+end
+
+
+--==================================================
+-- SHOVEL PHASE
+--
+-- HANYA SHOVEL
+--==================================================
+
+local function ShovelPhase(
+    ValidSeeds
+)
+
+    local CurrentPlants =
+        CountPlants()
+
+
+    local TotalSeedCount = 0
+
+
+    --==================================================
+    -- HITUNG SEMUA SEED
+    --==================================================
+
+    for _, SeedData in ipairs(
+        ValidSeeds
+    ) do
+
+        local Count =
+            tonumber(
+                SeedData.Tool:
+                    GetAttribute(
+                        "Count"
+                    )
+            ) or 0
+
+
+        if Count > 0 then
+
+            TotalSeedCount += Count
+
+        end
+
+    end
+
+
+    if TotalSeedCount <= 0 then
+        return
+    end
+
+
+    --==================================================
+    -- FREE SLOTS
+    --==================================================
+
+    local FreeSlots =
+        math.max(
+            0,
+            MAX_PLANTS - CurrentPlants
+        )
+
+
+    --==================================================
+    -- JUMLAH YANG PERLU DI-SHOVEL
+    --==================================================
+
+    local ShovelNeeded =
+        math.max(
+            0,
+            TotalSeedCount - FreeSlots
+        )
+
+
+    print("")
+    print(
+        "========== SHOVEL PHASE =========="
+    )
+
+    print(
+        "Plants:",
+        CurrentPlants,
+        "/",
+        MAX_PLANTS
+    )
+
+    print(
+        "Seeds:",
+        TotalSeedCount
+    )
+
+    print(
+        "Need Shovel:",
+        ShovelNeeded
+    )
+
+
+    --==================================================
+    -- TIDAK PERLU SHOVEL
+    --==================================================
+
+    if ShovelNeeded <= 0 then
+
+        print(
+            "🔨 Tidak perlu shovel."
+        )
+
+        UnequipTool()
+
+        return
+
+    end
+
+
+    --==================================================
+    -- SHOVEL LOOP
+    --==================================================
+
+    local Shoveled = 0
+
+
+    while Shoveled < ShovelNeeded do
+
+        --==================================================
+        -- CARI PLANT TERENDAH
+        --==================================================
+
+        local LowestPlant =
+            FindLowestReplaceablePlant(
+                ValidSeeds
+            )
+
+
+        if not LowestPlant then
+
+            print(
+                "🔨 Tidak ada plant yang bisa diganti."
+            )
+
+            break
+
+        end
+
+
+        local PlantName =
+            LowestPlant:GetAttribute(
+                "SeedName"
+            )
+
+
+        local BeforeCount =
+            CountPlants()
+
+
+        --==================================================
+        -- SHOVEL
+        --==================================================
+
+        local Success =
+            ShovelPlant(
+                LowestPlant
+            )
+
+
+        if not Success then
+
+            warn(
+                "❌ Gagal shovel:",
+                PlantName
+            )
+
+            break
+
+        end
+
+
+        --==================================================
+        -- WAIT PLANT HILANG
+        --==================================================
+
+        local Start =
+            os.clock()
+
+
+        while os.clock() - Start < 2 do
+
+            if CountPlants()
+                < BeforeCount then
+
+                break
+
+            end
+
+
+            task.wait(
+                0.05
+            )
+
+        end
+
+
+        local AfterCount =
+            CountPlants()
+
+
+        if AfterCount < BeforeCount then
+
+            Shoveled += 1
+
+
+            print(
+                "🔨 Shovel:",
+                PlantName,
+                "|",
+                Shoveled,
+                "/",
+                ShovelNeeded,
+                "|",
+                AfterCount,
+                "/",
+                MAX_PLANTS
+            )
+
+        else
+
+            warn(
+                "⚠️ Plant tidak berkurang:",
+                PlantName
+            )
+
+            break
+
+        end
+
+
+        task.wait(
+            ACTION_DELAY
+        )
+
+    end
+
+
+    --==================================================
+    -- UNEQUIP SETELAH SHOVEL
+    --==================================================
+
+    UnequipTool()
+
+
+    task.wait(
+        0.15
+    )
+
+
+    print(
+        "🔨 SHOVEL PHASE SELESAI"
+    )
+
+end
+
+
+--==================================================
+-- PLANT PHASE
+--
+-- HANYA PLANT
+--==================================================
+
+local function PlantPhase()
+
+    print("")
+    print(
+        "========== PLANT PHASE =========="
+    )
+
+
+    --==================================================
+    -- REFRESH SEEDS
+    --==================================================
+
+    local Seeds =
+        GetSeedTools()
+
+
+    if #Seeds == 0 then
+
+        UnequipTool()
+
+        return
+
+    end
+
+
+    --==================================================
+    -- VALID SEEDS
+    --==================================================
+
+    local ValidSeeds = {}
+
+
+    for _, SeedData in ipairs(
+        Seeds
+    ) do
+
+        if SeedData.RarityValue > 0 then
+
+            table.insert(
+                ValidSeeds,
+                SeedData
+            )
+
+        else
+
+            warn(
+                "⚠️ Rarity tidak ditemukan:",
+                SeedData.SeedName
+            )
+
+        end
+
+    end
+
+
+    if #ValidSeeds == 0 then
+
+        UnequipTool()
+
+        return
+
+    end
+
+
+    --==================================================
+    -- HIGHEST RARITY FIRST
+    --==================================================
+
+    SortSeeds(
+        ValidSeeds
+    )
+
+
+    --==================================================
+    -- PLANT
+    --==================================================
+
+    for _, SeedData in ipairs(
+        ValidSeeds
+    ) do
+
+        for i = 1, 100000 do
+
+            --==================================================
+            -- COUNT TERBARU
+            --==================================================
+
+            local CurrentCount =
+                tonumber(
+                    SeedData.Tool:
+                        GetAttribute(
+                            "Count"
+                        )
+                ) or 0
+
+
+            if CurrentCount <= 0 then
+                break
+            end
+
+
+            --==================================================
+            -- MAX PLANTS
+            --==================================================
+
+            local CurrentPlants =
+                CountPlants()
+
+
+            if CurrentPlants
+                >= MAX_PLANTS then
+
+                break
+
+            end
+
+
+            --==================================================
+            -- PLANT
+            --==================================================
+
+            local Success =
+                PlantSeed(
+                    SeedData
+                )
+
+
+            if not Success then
+
+                warn(
+                    "❌ Gagal plant:",
+                    SeedData.SeedName
+                )
+
+                break
+
+            end
+
+
+            print(
+                "🌱 Plant:",
+                SeedData.SeedName,
+                "|",
+                CountPlants(),
+                "/",
+                MAX_PLANTS
+            )
+
+
+            task.wait(
+                ACTION_DELAY
+            )
+
+        end
+
+    end
+
+
+    --==================================================
+    -- UNEQUIP SETELAH PLANT
+    --==================================================
+
+    UnequipTool()
+
+
+    task.wait(
+        0.15
+    )
+
+
+    print(
+        "🌱 PLANT PHASE SELESAI"
+    )
+
+end
+
+
+--==================================================
+-- SMART PLANT
+--
+-- SHOVEL DULU SAMPAI SLOT CUKUP
+-- BARU PLANT
+--==================================================
+
+local function SmartPlant()
+
+    --==================================================
+    -- GET SEEDS
+    --==================================================
+
+    local Seeds =
+        GetSeedTools()
+
+
+    if #Seeds == 0 then
+        return
+    end
+
+
+    --==================================================
+    -- VALID SEEDS
+    --==================================================
+
+    local ValidSeeds = {}
+
+
+    for _, SeedData in ipairs(
+        Seeds
+    ) do
+
+        if SeedData.RarityValue > 0 then
+
+            table.insert(
+                ValidSeeds,
+                SeedData
+            )
+
+        end
+
+    end
+
+
+    if #ValidSeeds == 0 then
+        return
+    end
+
+
+    --==================================================
+    -- HIGHEST RARITY FIRST
+    --==================================================
+
+    SortSeeds(
+        ValidSeeds
+    )
+
+
+    --==================================================
+    -- PHASE 1
+    -- SHOVEL
+    --==================================================
+
+    ShovelPhase(
+        ValidSeeds
+    )
+
+
+    --==================================================
+    -- WAIT
+    --==================================================
+
+    task.wait(
+        0.15
+    )
+
+
+    --==================================================
+    -- PHASE 2
+    -- PLANT
+    --==================================================
+
+    PlantPhase()
+
+end
+
+
+--==================================================
+-- START
+--==================================================
+
+print("")
+print(
+    "======================================"
+)
+
+print(
+    "          AUTO KAITUN START"
+)
+
+print(
+    "======================================"
+)
+
+print(
+    "MAX PLANTS:",
+    MAX_PLANTS
+)
+
+print(
+    "AUTO BUY: ON"
+)
+
+print(
+    "AUTO HARVEST: INDEPENDENT"
+)
+
+print(
+    "AUTO SELL: INDEPENDENT"
+)
+
+print(
+    "SMART SHOVEL: ON"
+)
+
+print(
+    "AUTO PLANT: ON"
+)
+
+print(
+    "UNEQUIP AFTER SHOVEL: ON"
+)
+
+print(
+    "UNEQUIP AFTER PLANT: ON"
+)
+
+print(
+    "SEEDNAME: DISPLAY NAME"
+)
+
+print(
+    "======================================"
+)
+
+print("")
+
+
+--==================================================
+-- INDEPENDENT HARVEST LOOP
+--==================================================
+
+task.spawn(function()
+
+    while task.wait(
+        HARVEST_LOOP_DELAY
+    ) do
+
+        pcall(function()
+
+            AutoHarvest()
+
+        end)
+
+    end
+
+end)
+
+
+--==================================================
+-- INDEPENDENT SELL LOOP
+--==================================================
+
+task.spawn(function()
+
+    while task.wait(
+        SELL_LOOP_DELAY
+    ) do
+
+        pcall(function()
+
+            SellAll()
+
+        end)
+
+    end
+
+end)
+
+
+--==================================================
+-- MAIN LOOP
+--
+-- HANYA:
+--
+-- BUY
+-- SHOVEL
+-- PLANT
+--
+-- HARVEST DAN SELL TIDAK DI SINI
+--==================================================
+
+while task.wait(
+    MAIN_LOOP_DELAY
+) do
+
+
+    --==================================================
+    -- BUY
+    --==================================================
+
+    pcall(function()
+
+        BuyAllSeeds()
+
+    end)
+
+
+    --==================================================
+    -- SHOVEL + PLANT
+    --==================================================
+
+    pcall(function()
+
+        SmartPlant()
+
+    end)
+
+end
