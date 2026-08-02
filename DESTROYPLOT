@@ -41,6 +41,60 @@ local function IsMyPlot(Plot)
 end
 
 --==================================================
+-- DESTROY VISUAL FENCE
+--==================================================
+
+local function DestroyVisualObjects(Visual)
+    if not Visual or not Visual.Parent then
+        return
+    end
+
+    for _, Obj in ipairs(Visual:GetDescendants()) do
+        if Obj.Name == "FenceConnectors"
+        or Obj.Name == "FencePole" then
+            Obj:Destroy()
+        end
+    end
+
+    Visual.DescendantAdded:Connect(function(Obj)
+        if Obj.Name == "FenceConnectors"
+        or Obj.Name == "FencePole" then
+            Obj:Destroy()
+        end
+    end)
+end
+
+--==================================================
+-- SETUP VISUAL
+--==================================================
+
+local function SetupVisual(Plot, Visual)
+    if not Visual or not Visual.Parent then
+        return
+    end
+
+    DestroyVisualObjects(Visual)
+end
+
+--==================================================
+-- DESTROY LOADING CAMERA
+--==================================================
+
+local function DestroyLoadingCams(Plot)
+    local LoadingCam = Plot:FindFirstChild("LoadingCam")
+
+    if LoadingCam then
+        LoadingCam:Destroy()
+    end
+
+    local LoadingScreenCam = Plot:FindFirstChild("LoadingScreenCam")
+
+    if LoadingScreenCam then
+        LoadingScreenCam:Destroy()
+    end
+end
+
+--==================================================
 -- DESTROY PART
 --==================================================
 
@@ -50,14 +104,10 @@ local function CheckPart(Obj, IsMine)
     end
 
     if IsMine then
-        -- Plot kita:
-        -- Lindungi Base, HarvestPart, Stud_Part
         if not ProtectedParts[Obj.Name] then
             Obj:Destroy()
         end
     else
-        -- Plot orang lain:
-        -- Destroy semua BasePart
         Obj:Destroy()
     end
 end
@@ -73,17 +123,9 @@ local function SetupPlants(Plot, Plants)
 
     local IsMine = IsMyPlot(Plot)
 
-    --==================================================
-    -- DESTROY YANG SUDAH ADA
-    --==================================================
-
     for _, Obj in ipairs(Plants:GetDescendants()) do
         CheckPart(Obj, IsMine)
     end
-
-    --==================================================
-    -- DESTROY PART BARU
-    --==================================================
 
     Plants.DescendantAdded:Connect(function(Obj)
         CheckPart(Obj, IsMine)
@@ -99,6 +141,16 @@ local function SetupPlot(Plot)
         return
     end
 
+    --==================================================
+    -- DESTROY LOADING CAM
+    --==================================================
+
+    DestroyLoadingCams(Plot)
+
+    --==================================================
+    -- SETUP PLANTS
+    --==================================================
+
     local Plants = Plot:FindFirstChild("Plants")
 
     if Plants then
@@ -106,13 +158,38 @@ local function SetupPlot(Plot)
     end
 
     --==================================================
-    -- KALAU PLANTS BARU DIBUAT
+    -- SETUP VISUAL
+    --==================================================
+
+    local Visual = Plot:FindFirstChild("Visual")
+
+    if Visual then
+        SetupVisual(Plot, Visual)
+    end
+
+    --==================================================
+    -- OBJECT BARU DI DALAM PLOT
     --==================================================
 
     Plot.ChildAdded:Connect(function(Obj)
+
+        -- LoadingCam / LoadingScreenCam
+        if Obj.Name == "LoadingCam"
+        or Obj.Name == "LoadingScreenCam" then
+            Obj:Destroy()
+            return
+        end
+
+        -- Plants
         if Obj.Name == "Plants" then
             SetupPlants(Plot, Obj)
         end
+
+        -- Visual
+        if Obj.Name == "Visual" then
+            SetupVisual(Plot, Obj)
+        end
+
     end)
 end
 
