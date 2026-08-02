@@ -1,8 +1,16 @@
 local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
 
 local BuyList = {
-    "Harpa",
+    -- Sprinkler
+    "Syrup Sprinkler",
 
+    -- Watering Can
+    "Syrup Watering Can",
+
+    -- Magic Mail
+
+    -- Other Gear
+    "Harp",
 }
 
 while task.wait(2) do
