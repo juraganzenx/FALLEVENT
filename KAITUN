@@ -1,4 +1,4 @@
---v7
+--v8
 -- AUTO KAITUN
 --==================================================
 -- AUTO BUY
@@ -9,19 +9,17 @@
 -- AUTO EXPAND GARDEN
 --
 -- MAX PLANTS BERDASARKAN LEVEL:
---
 -- LEVEL 1 = 200
 -- LEVEL 2 = 300
 -- LEVEL 3 = 500
 --
--- MAX LEVEL = 3
+-- MUTATION REQUIRED:
+-- Maple Bamboo   -> Mutation di PLANT
+-- Maple Mushroom -> Mutation di PLANT
+-- Maple Acorn    -> Mutation di FRUIT
 --
--- BAMBOO + MUSHROOM:
--- 1x HARVEST / CABUT
--- Mutation ada di Plant
---
--- FRUIT:
--- Mutation ada di Fruit
+-- Fruit lainnya:
+-- Tetap harvest walaupun tidak ada Mutation
 --==================================================
 
 
@@ -117,11 +115,6 @@ local ACTION_DELAY = 0.15
 
 local MAIN_LOOP_DELAY = 0.5
 
-
---==================================================
--- AUTO EXPAND CONFIG
---==================================================
-
 local EXPAND_CHECK_DELAY = 2
 
 local MAX_LEVEL = 3
@@ -144,11 +137,6 @@ local PLANT_LIMIT_BY_LEVEL = {
 
 --==================================================
 -- LEVEL REQUIREMENT
---
--- Target Level = Minimal Leaves
---
--- Level 1 -> Level 2 = 10K
--- Level 2 -> Level 3 = 100K
 --==================================================
 
 local LEVEL_REQUIREMENT = {
@@ -309,6 +297,10 @@ local SEED_RARITY = {
 
 --==================================================
 -- ONE TIME PLANTS
+--
+-- Bamboo dan Mushroom:
+-- 1x cabut
+-- Mutation dicek di PLANT
 --==================================================
 
 local ONE_TIME_PLANTS = {
@@ -316,6 +308,20 @@ local ONE_TIME_PLANTS = {
     ["Maple Bamboo"] = true,
 
     ["Maple Mushroom"] = true,
+
+}
+
+
+--==================================================
+-- MUTATION REQUIRED FRUITS
+--
+-- Acorn adalah Fruit
+-- Mutation dicek di FRUIT
+--==================================================
+
+local MUTATION_REQUIRED_FRUITS = {
+
+    ["Maple Acorn"] = true,
 
 }
 
@@ -343,15 +349,19 @@ local function GetRarityFromSeedName(
         return nil, 0
     end
 
+
     Name =
         tostring(Name)
+
 
     local Rarity =
         SEED_RARITY[Name]
 
+
     if not Rarity then
         return nil, 0
     end
+
 
     return Rarity,
         RARITY_ORDER[Rarity] or 0
@@ -372,6 +382,7 @@ local function GetMyPlot()
                 "Plot" .. i
             )
 
+
         if Plot
             and Plot:GetAttribute(
                 "Owner"
@@ -382,6 +393,7 @@ local function GetMyPlot()
         end
 
     end
+
 
     return nil
 
@@ -399,6 +411,7 @@ local function CountVisualModels(
 
     local Count = 0
 
+
     for _, Obj in ipairs(
         Visual:GetChildren()
     ) do
@@ -410,6 +423,7 @@ local function CountVisualModels(
         end
 
     end
+
 
     return Count
 
@@ -428,10 +442,12 @@ local function GetPlotLevel(
         return 0
     end
 
+
     local Visual =
         Plot:FindFirstChild(
             "Visual"
         )
+
 
     if not Visual then
         return 0
@@ -454,8 +470,6 @@ local function GetPlotLevel(
 
     --==================================================
     -- LEVEL 1
-    -- 2 FRONT_BedSection
-    -- 0 BedSection
     --==================================================
 
     if FrontCount == 2
@@ -468,8 +482,6 @@ local function GetPlotLevel(
 
     --==================================================
     -- LEVEL 2
-    -- 2 FRONT_BedSection
-    -- 2 BedSection
     --==================================================
 
     if FrontCount == 2
@@ -482,8 +494,6 @@ local function GetPlotLevel(
 
     --==================================================
     -- LEVEL 3
-    -- 2 FRONT_BedSection
-    -- 4 BedSection
     --==================================================
 
     if FrontCount == 2
@@ -501,14 +511,13 @@ end
 
 --==================================================
 -- GET MAX PLANTS
---
--- OTOMATIS BERDASARKAN LEVEL
 --==================================================
 
 local function GetMaxPlants()
 
     local Plot =
         GetMyPlot()
+
 
     if not Plot then
         return 200
@@ -537,6 +546,7 @@ local function GetPlants()
     local Plot =
         GetMyPlot()
 
+
     if not Plot then
         return {}
     end
@@ -546,6 +556,7 @@ local function GetPlants()
         Plot:FindFirstChild(
             "Plants"
         )
+
 
     if not Plants then
         return {}
@@ -579,6 +590,7 @@ local function GetLeaves()
             "leaderstats"
         )
 
+
     if not Leaderstats then
         return nil
     end
@@ -588,6 +600,7 @@ local function GetLeaves()
         Leaderstats:FindFirstChild(
             "Leaves"
         )
+
 
     if not Leaves then
         return nil
@@ -645,6 +658,7 @@ local function UnequipTool()
     local Character =
         LocalPlayer.Character
 
+
     if not Character then
         return
     end
@@ -654,6 +668,7 @@ local function UnequipTool()
         Character:FindFirstChildOfClass(
             "Humanoid"
         )
+
 
     if Humanoid then
 
@@ -676,6 +691,7 @@ local function GetShovel()
 
     local Character =
         LocalPlayer.Character
+
 
     if not Character then
         return nil
@@ -712,10 +728,12 @@ local function EquipShovel()
     local Character =
         LocalPlayer.Character
 
+
     local Backpack =
         LocalPlayer:FindFirstChild(
             "Backpack"
         )
+
 
     if not Character
         or not Backpack then
@@ -727,6 +745,7 @@ local function EquipShovel()
 
     local Shovel =
         GetShovel()
+
 
     if Shovel then
         return Shovel
@@ -745,7 +764,9 @@ local function EquipShovel()
             Tool.Parent =
                 Character
 
+
             task.wait(0.1)
+
 
             return Tool
 
@@ -768,10 +789,12 @@ local function GetSeedTools()
     local Character =
         LocalPlayer.Character
 
+
     local Backpack =
         LocalPlayer:FindFirstChild(
             "Backpack"
         )
+
 
     local Result = {}
 
@@ -798,6 +821,7 @@ local function GetSeedTools()
                 Tool:GetAttribute(
                     "SeedTool"
                 )
+
 
             if not SeedTool then
                 continue
@@ -904,6 +928,7 @@ local function GetStock(
             "Main_Frame"
         )
 
+
     if not MainFrame then
         return 0
     end
@@ -913,6 +938,7 @@ local function GetStock(
         MainFrame:FindFirstChild(
             "Stock_Text"
         )
+
 
     if not StockText then
         return 0
@@ -999,6 +1025,7 @@ local function FireHarvestPrompt(
             "HarvestPart"
         )
 
+
     if not HarvestPart then
         return false
     end
@@ -1008,6 +1035,7 @@ local function FireHarvestPrompt(
         HarvestPart:FindFirstChild(
             "HarvestPrompt"
         )
+
 
     if not HarvestPrompt
         or not HarvestPrompt:IsA(
@@ -1046,18 +1074,31 @@ end
 
 
 --==================================================
--- HARVEST ONE TIME PLANT
+-- HARVEST BAMBOO / MUSHROOM
+--
+-- IMPORTANT:
+-- Mutation WAJIB ada
+-- Mutation dicek langsung di PLANT
 --==================================================
 
 local function HarvestOneTimePlant(
     Plant
 )
 
+    if not Plant then
+        return false
+    end
+
+
     local SeedName =
         Plant:GetAttribute(
             "SeedName"
         )
 
+
+    --==================================================
+    -- HARUS BAMBOO / MUSHROOM
+    --==================================================
 
     if not ONE_TIME_PLANTS[
         SeedName
@@ -1068,16 +1109,32 @@ local function HarvestOneTimePlant(
     end
 
 
+    --==================================================
+    -- CEK MUTATION DI PLANT
+    --==================================================
+
     local Mutation =
         Plant:GetAttribute(
             "Mutation"
         )
 
 
-    if Mutation then
-        -- Mutation Plant terdeteksi
+    --==================================================
+    -- TIDAK ADA MUTATION
+    -- JANGAN HARVEST / CABUT
+    --==================================================
+
+    if not Mutation then
+
+        return false
+
     end
 
+
+    --==================================================
+    -- ADA MUTATION
+    -- BOLEH HARVEST
+    --==================================================
 
     return FireHarvestPrompt(
         Plant
@@ -1087,12 +1144,83 @@ end
 
 
 --==================================================
+-- GET FRUIT NAME
+--==================================================
+
+local function GetFruitName(
+    Fruit
+)
+
+    --==================================================
+    -- PRIORITAS 1:
+    -- SeedName
+    --==================================================
+
+    local SeedName =
+        Fruit:GetAttribute(
+            "SeedName"
+        )
+
+
+    if SeedName then
+        return tostring(
+            SeedName
+        )
+    end
+
+
+    --==================================================
+    -- PRIORITAS 2:
+    -- FruitName
+    --==================================================
+
+    local FruitName =
+        Fruit:GetAttribute(
+            "FruitName"
+        )
+
+
+    if FruitName then
+        return tostring(
+            FruitName
+        )
+    end
+
+
+    --==================================================
+    -- PRIORITAS 3:
+    -- Object Name
+    --==================================================
+
+    return tostring(
+        Fruit.Name
+    )
+
+end
+
+
+--==================================================
 -- HARVEST FRUIT
+--
+-- ACORN:
+-- Mutation WAJIB ada
+--
+-- FRUIT LAIN:
+-- Tidak perlu mutation
 --==================================================
 
 local function HarvestFruit(
     Fruit
 )
+
+    if not Fruit then
+        return false
+    end
+
+
+    --==================================================
+    -- BLACKLIST
+    --==================================================
 
     local CorePartName =
         Fruit:GetAttribute(
@@ -1109,16 +1237,47 @@ local function HarvestFruit(
     end
 
 
-    local Mutation =
-        Fruit:GetAttribute(
-            "Mutation"
+    --==================================================
+    -- GET FRUIT NAME
+    --==================================================
+
+    local FruitName =
+        GetFruitName(
+            Fruit
         )
 
 
-    if Mutation then
-        -- Mutation Fruit terdeteksi
+    --==================================================
+    -- ACORN
+    --==================================================
+
+    if MUTATION_REQUIRED_FRUITS[
+        FruitName
+    ] then
+
+        local Mutation =
+            Fruit:GetAttribute(
+                "Mutation"
+            )
+
+
+        --==================================================
+        -- ACORN BELUM MUTATION
+        -- JANGAN HARVEST
+        --==================================================
+
+        if not Mutation then
+
+            return false
+
+        end
+
     end
 
+
+    --==================================================
+    -- FRUIT BOLEH DIHARVEST
+    --==================================================
 
     return FireHarvestPrompt(
         Fruit
@@ -1128,7 +1287,7 @@ end
 
 
 --==================================================
--- HARVEST PLANT
+-- HARVEST ONE PLANT
 --==================================================
 
 local function HarvestPlant(
@@ -1148,6 +1307,9 @@ local function HarvestPlant(
 
     --==================================================
     -- BAMBOO / MUSHROOM
+    --
+    -- JANGAN PERNAH harvest Plant
+    -- jika Mutation belum ada
     --==================================================
 
     if ONE_TIME_PLANTS[
@@ -1181,13 +1343,14 @@ local function HarvestPlant(
             "Fruits"
         )
 
+
     if not Fruits then
         return
     end
 
 
     --==================================================
-    -- MUTATION FIRST
+    -- MUTATION FRUIT FIRST
     --==================================================
 
     for _, Fruit in ipairs(
@@ -1245,6 +1408,7 @@ local function AutoHarvest()
     local Plot =
         GetMyPlot()
 
+
     if not Plot then
         return
     end
@@ -1254,6 +1418,7 @@ local function AutoHarvest()
         Plot:FindFirstChild(
             "Plants"
         )
+
 
     if not Plants then
         return
@@ -1533,6 +1698,7 @@ local function GetBottomFace()
     local Plot =
         GetMyPlot()
 
+
     if not Plot then
         return nil
     end
@@ -1542,6 +1708,7 @@ local function GetBottomFace()
         Plot:FindFirstChild(
             "Visual"
         )
+
 
     if not Visual then
         return nil
@@ -1553,6 +1720,7 @@ local function GetBottomFace()
             "FRONT_BedSection"
         )
 
+
     if not BedSection then
         return nil
     end
@@ -1562,6 +1730,7 @@ local function GetBottomFace()
         BedSection:FindFirstChild(
             "BottomFace"
         )
+
 
     if not BottomFace then
         return nil
@@ -1589,6 +1758,7 @@ local function PlantSeed(
     local Tool =
         SeedData.Tool
 
+
     if not Tool then
         return false
     end
@@ -1596,6 +1766,7 @@ local function PlantSeed(
 
     local Character =
         LocalPlayer.Character
+
 
     local Backpack =
         LocalPlayer:FindFirstChild(
@@ -1637,6 +1808,7 @@ local function PlantSeed(
         Tool.Parent =
             Character
 
+
         task.wait(0.1)
 
     end
@@ -1647,6 +1819,7 @@ local function PlantSeed(
             "SeedTool"
         )
 
+
     if not SeedTool then
         return false
     end
@@ -1654,6 +1827,7 @@ local function PlantSeed(
 
     local BottomFace =
         GetBottomFace()
+
 
     if not BottomFace then
         return false
@@ -1709,6 +1883,7 @@ local function PlantSeed(
         task.wait(
             ACTION_DELAY
         )
+
 
         return true
 
@@ -1937,6 +2112,7 @@ local function ShovelPhase(
 
     UnequipTool()
 
+
     task.wait(
         0.15
     )
@@ -2100,6 +2276,7 @@ local function PlantPhase()
 
     UnequipTool()
 
+
     task.wait(
         0.15
     )
@@ -2190,13 +2367,7 @@ local function TryExpand()
 
 
     if not Plot then
-
-        warn(
-            "[AUTO EXPAND] Plot tidak ditemukan"
-        )
-
         return
-
     end
 
 
@@ -2222,13 +2393,7 @@ local function TryExpand()
 
 
     if Leaves == nil then
-
-        warn(
-            "[AUTO EXPAND] leaderstats.Leaves tidak ditemukan"
-        )
-
         return
-
     end
 
 
@@ -2277,10 +2442,6 @@ local function TryExpand()
             MAX_LEVEL
         )
 
-        print(
-            "================================"
-        )
-
         return
 
     end
@@ -2301,15 +2462,7 @@ local function TryExpand()
 
 
     if not RequiredLeaves then
-
-        warn(
-            "[AUTO EXPAND] Requirement Level",
-            NextLevel,
-            "tidak ditemukan"
-        )
-
         return
-
     end
 
 
@@ -2341,10 +2494,6 @@ local function TryExpand()
             FormatNumber(
                 RequiredLeaves - Leaves
             )
-        )
-
-        print(
-            "================================"
         )
 
         return
@@ -2382,17 +2531,11 @@ local function TryExpand()
     if Success then
 
         print(
-            "[AUTO EXPAND] Expand request berhasil dikirim."
+            "[AUTO EXPAND] Request berhasil."
         )
 
-        task.wait(
-            1
-        )
+        task.wait(1)
 
-
-        --==================================================
-        -- CEK LEVEL BARU
-        --==================================================
 
         local NewPlot =
             GetMyPlot()
@@ -2428,11 +2571,6 @@ local function TryExpand()
         )
 
     end
-
-
-    print(
-        "================================"
-    )
 
 end
 
@@ -2491,15 +2629,15 @@ print(
 )
 
 print(
-    "BAMBOO: PLANT HARVEST"
+    "BAMBOO: MUTATION REQUIRED"
 )
 
 print(
-    "MUSHROOM: PLANT HARVEST"
+    "MUSHROOM: MUTATION REQUIRED"
 )
 
 print(
-    "ACORN: FRUIT HARVEST"
+    "ACORN: MUTATION REQUIRED"
 )
 
 print(
@@ -2578,23 +2716,8 @@ task.spawn(function()
                 )
 
 
-            --==================================================
-            -- STOP DI LEVEL 3
-            --==================================================
-
             if Level >= MAX_LEVEL then
-
-                print(
-                    "[AUTO EXPAND] Plot sudah Level",
-                    MAX_LEVEL
-                )
-
-                print(
-                    "[AUTO EXPAND] Auto Expand selesai."
-                )
-
                 return
-
             end
 
 
@@ -2615,7 +2738,7 @@ end)
 -- PLANT
 --
 -- HARVEST + SELL + EXPAND
--- TETAP JALAN INDEPENDENT
+-- TETAP INDEPENDENT
 --==================================================
 
 while task.wait(
@@ -2634,7 +2757,7 @@ while task.wait(
 
 
     --==================================================
-    -- SHOVEL + PLANT
+    -- SMART SHOVEL + PLANT
     --==================================================
 
     pcall(function()
