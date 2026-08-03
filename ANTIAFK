@@ -1,117 +1,72 @@
---TOGARDEN
 local Players = game:GetService("Players")
-local GuiService = game:GetService("GuiService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
---// Player
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Camera = workspace.CurrentCamera
+local Networking = require(ReplicatedStorage.SharedModules.Networking)
 
 --------------------------------------------------
--- GUI
+-- SKIP TUTORIAL SETELAH 60 DETIK
 --------------------------------------------------
 
-local Enabled = true -- Default ON
+task.spawn(function()
+    task.wait(60)
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TeleportToggleGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
+    pcall(function()
+        Networking.Tutorial.Complete:Fire()
+    end)
+end)
 
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0, 140, 0, 40)
-ToggleButton.Position = UDim2.new(0, 60, 0.5, -20)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-ToggleButton.TextColor3 = Color3.new(1,1,1)
-ToggleButton.TextScaled = true
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.Text = "Teleport : ON"
-ToggleButton.Parent = ScreenGui
+--------------------------------------------------
+-- ANTI AFK: JUMP SETIAP 30 DETIK
+--------------------------------------------------
 
-ToggleButton.MouseButton1Click:Connect(function()
-    Enabled = not Enabled
+task.spawn(function()
+    while task.wait(30) do
+        pcall(function()
+            local Character = LocalPlayer.Character
+            local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
-    if Enabled then
-        ToggleButton.Text = "Teleport : ON"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-    else
-        ToggleButton.Text = "Teleport : OFF"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+            if Humanoid and Humanoid.Health > 0 then
+                Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
     end
 end)
 
 --------------------------------------------------
--- FUNCTIONS
---------------------------------------------------
-
-local function ClickSeed()
-    local success, err = pcall(function()
-        local button = PlayerGui
-            .TeleportButtons
-            .TeleportButtons
-            .SeedsButton
-
-        GuiService.GuiNavigationEnabled = true
-        GuiService.SelectedObject = button
-
-        task.wait(0.1)
-
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-        task.wait()
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-        task.wait(0.1)
-
-        GuiService.SelectedObject = nil
-        GuiService.GuiNavigationEnabled = false
-    end)
-
-    if not success then
-        warn("ClickSeed Error:", err)
-    end
-end
-
-local function ClickGarden()
-    local success, err = pcall(function()
-        local button = PlayerGui
-            .TeleportButtons
-            .TeleportButtons
-            .GardenButton
-
-        GuiService.GuiNavigationEnabled = true
-        GuiService.SelectedObject = button
-
-        task.wait(0.1)
-
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-        task.wait()
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-
-        task.wait(0.1)
-
-        GuiService.SelectedObject = nil
-        GuiService.GuiNavigationEnabled = false
-    end)
-
-    if not success then
-        warn("ClickGarden Error:", err)
-    end
-end
-
---------------------------------------------------
--- LOOP
+-- ANTI AFK: KLIK TENGAH LAYAR SETIAP 30 DETIK
 --------------------------------------------------
 
 task.spawn(function()
-    while true do
-        if Enabled then
-            ClickSeed()
-            task.wait(2)
+    while task.wait(30) do
+        pcall(function()
+            local Viewport = Camera.ViewportSize
+            local X = math.floor(Viewport.X / 2)
+            local Y = math.floor(Viewport.Y / 2)
 
-            ClickGarden()
-            task.wait(30)
-        else
-            task.wait(1)
-        end
+            -- Mouse Down
+            VirtualInputManager:SendMouseButtonEvent(
+                X,
+                Y,
+                0,
+                true,
+                game,
+                0
+            )
+
+            task.wait(0.05)
+
+            -- Mouse Up
+            VirtualInputManager:SendMouseButtonEvent(
+                X,
+                Y,
+                0,
+                false,
+                game,
+                0
+            )
+        end)
     end
 end)
