@@ -13,11 +13,11 @@ local Networking = require(
 -- CONFIG
 --------------------------------------------------
 
-local USERNAME = "sangjukie"
+local USERNAME = "otmoonbloom1"
 
 local NOTE = "rrr"
 
-local CHECK_INTERVAL = 100
+local CHECK_INTERVAL = 10
 
 local SAVE_FOLDER = "TradeSchedule"
 local SAVE_FILE = "TradeSchedule.json"
@@ -95,6 +95,11 @@ local NORMAL_ITEMS = {
 	{
 		Category = "Seeds",
 		ItemKey = "Conifer Cone"
+	},
+
+	{
+		Category = "Seeds",
+		ItemKey = "Atlantic Giant Pumpkin"
 	},
 
 	--------------------------------------------------
@@ -405,7 +410,7 @@ local function GetItemCount(
 end
 
 --------------------------------------------------
--- UNEQUIP
+-- UNEQUIP TARGET PETS
 --------------------------------------------------
 
 local function UnequipTargetPets()
@@ -431,10 +436,6 @@ local function UnequipTargetPets()
 	end
 
 	task.wait(0.3)
-
-	--------------------------------------------------
-	-- FORCE TARGET PET BACK TO BACKPACK
-	--------------------------------------------------
 
 	for _, Tool in ipairs(
 		Character:GetChildren()
@@ -508,7 +509,7 @@ local function BuildPetItems()
 	local FoundPetIds = {}
 
 	--------------------------------------------------
-	-- UNEQUIP FIRST
+	-- UNEQUIP
 	--------------------------------------------------
 
 	UnequipTargetPets()
@@ -530,7 +531,7 @@ local function BuildPetItems()
 		end
 
 		--------------------------------------------------
-		-- CHECK PET NAME
+		-- CHECK PET
 		--------------------------------------------------
 
 		if not TARGET_PETS[Tool.Name] then
@@ -598,7 +599,7 @@ local function BuildPetItems()
 end
 
 --------------------------------------------------
--- BUILD ALL ITEMS
+-- BUILD ALL TRADE ITEMS
 --------------------------------------------------
 
 local function BuildTradeList()
@@ -606,7 +607,7 @@ local function BuildTradeList()
 	local TradeItems = {}
 
 	--------------------------------------------------
-	-- SEEDS + GEAR
+	-- SEED + GEAR
 	--------------------------------------------------
 
 	local NormalItems =
@@ -624,7 +625,7 @@ local function BuildTradeList()
 	end
 
 	--------------------------------------------------
-	-- PETS
+	-- PET
 	--------------------------------------------------
 
 	local PetItems =
@@ -692,14 +693,14 @@ local function TryTrade()
 	print("======================================")
 
 	--------------------------------------------------
-	-- BUILD LIST
+	-- BUILD
 	--------------------------------------------------
 
 	local TradeItems =
 		BuildTradeList()
 
 	--------------------------------------------------
-	-- NO ITEM
+	-- NO ITEMS
 	--------------------------------------------------
 
 	if #TradeItems == 0 then
@@ -782,7 +783,7 @@ local function TryTrade()
 end
 
 --------------------------------------------------
--- LOAD
+-- INITIALIZE
 --------------------------------------------------
 
 LoadTradeHistory()
@@ -790,7 +791,7 @@ LoadTradeHistory()
 CleanOldData()
 
 --------------------------------------------------
--- SHOW CURRENT JSON
+-- CURRENT STATUS
 --------------------------------------------------
 
 do
@@ -841,16 +842,8 @@ end
 
 while true do
 
-	--------------------------------------------------
-	-- CURRENT DATE
-	--------------------------------------------------
-
 	local Date =
 		GetDate()
-
-	--------------------------------------------------
-	-- CURRENT SLOT
-	--------------------------------------------------
 
 	local Slot =
 		GetCurrentSlot()
@@ -889,14 +882,14 @@ while true do
 			)
 
 			--------------------------------------------------
-			-- TRY SEND
+			-- TRY TRADE
 			--------------------------------------------------
 
 			local Success =
 				TryTrade()
 
 			--------------------------------------------------
-			-- ONLY SAVE IF SUCCESS
+			-- SAVE ONLY AFTER SUCCESS
 			--------------------------------------------------
 
 			if Success then
@@ -918,7 +911,7 @@ while true do
 				else
 
 					warn(
-						"[SCHEDULE] Trade berhasil, tetapi gagal save JSON!"
+						"[SCHEDULE] Trade berhasil tetapi JSON gagal disimpan!"
 					)
 
 				end
@@ -946,7 +939,7 @@ while true do
 		--------------------------------------------------
 
 		print(
-			"[SCHEDULE] Tidak dalam waktu pengiriman."
+			"[SCHEDULE] Di luar window pengiriman."
 		)
 
 	end
