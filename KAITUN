@@ -1,4 +1,5 @@
--- V12
+--==================================================
+-- V13
 -- AUTO KAITUN
 --==================================================
 -- AUTO BUY
@@ -18,6 +19,10 @@
 -- PLANT BAMBOO / MUSHROOM
 --      ↓
 -- SUPER WATERING CAN
+--
+-- DO NOT PLANT:
+-- Atlantic Giant Pumpkin
+-- Amber Cranberry (SUPER)
 --
 -- MUTATION:
 -- Maple Bamboo   -> Mutation di PLANT
@@ -133,7 +138,7 @@ local MAX_LEVEL = 3
 
 
 --==================================================
--- SPECIAL BAMBOO / MUSHROOM CONFIG
+-- SPECIAL BAMBOO / MUSHROOM
 --==================================================
 
 local SPECIAL_SEED_MIN = 50
@@ -143,6 +148,26 @@ local SPECIAL_SEEDS = {
     ["Maple Bamboo"] = true,
 
     ["Maple Mushroom"] = true,
+
+}
+
+
+--==================================================
+-- DO NOT PLANT
+--==================================================
+-- Seed ini TIDAK AKAN:
+-- 1. Ditanam
+-- 2. Dihitung untuk shovel
+-- 3. Digunakan sebagai alasan mengganti plant
+--==================================================
+
+local DO_NOT_PLANT = {
+
+    -- SUPER
+    ["Amber Cranberry"] = true,
+
+    -- LEGENDARY
+    ["Atlantic Giant Pumpkin"] = true,
 
 }
 
@@ -158,14 +183,20 @@ local AFTER_SPECIAL_WATER_DELAY = 3
 local WATERING_CAN_DELAY = 60
 
 local WATERING_CAN_NAME =
-    "Syrup Watering Can"
+    "Super Watering Can"
 
 
 local SPRINKLERS = {
 
-    "Syrup Sprinkler",
+    "Common Sprinkler",
 
-    "Super Syrup Sprinkler",
+    "Uncommon Sprinkler",
+
+    "Rare Sprinkler",
+
+    "Legendary Sprinkler",
+
+    "Super Sprinkler",
 
 }
 
@@ -1128,7 +1159,8 @@ end
 
 
 --==================================================
--- GET FRONT BED SECTION PALING DEKAT EXPAND
+-- GET FRONT BED SECTION
+-- PALING DEKAT DENGAN EXPAND
 --==================================================
 
 local function GetPlantBedSection()
@@ -1167,6 +1199,7 @@ local function GetPlantBedSection()
 
 
     local FrontSections = {}
+
 
     for _, Obj in ipairs(
         Visual:GetChildren()
@@ -1316,9 +1349,7 @@ end
 
 
 --==================================================
--- GET NEXT RANDOM PLANT POSITION
---
--- TIDAK ADA MAX ATTEMPTS
+-- GET RANDOM PLANT POSITION
 --==================================================
 
 local function GetNextPlantPosition()
@@ -1333,40 +1364,40 @@ local function GetNextPlantPosition()
 
     while true do
 
-        local angle =
+        local Angle =
             math.random()
             * math.pi
             * 2
 
-        local radius =
+        local Radius =
             math.sqrt(
                 math.random()
             )
             * RADIUS
 
-        local height =
+        local Height =
             math.random()
             * MAX_HEIGHT
 
 
-        local localPos =
+        local LocalPos =
             Vector3.new(
 
-                math.cos(angle)
-                    * radius,
+                math.cos(Angle)
+                    * Radius,
 
-                height,
+                Height,
 
-                math.sin(angle)
-                    * radius
+                math.sin(Angle)
+                    * Radius
 
             )
 
 
-        local worldPos =
+        local WorldPos =
             BottomFace.CFrame:
                 PointToWorldSpace(
-                    localPos
+                    LocalPos
                 )
 
 
@@ -1379,7 +1410,7 @@ local function GetNextPlantPosition()
 
             if (
                 Pos
-                - worldPos
+                - WorldPos
             ).Magnitude
                 < MIN_DISTANCE then
 
@@ -1396,11 +1427,11 @@ local function GetNextPlantPosition()
 
             table.insert(
                 UsedPositions,
-                worldPos
+                WorldPos
             )
 
 
-            return worldPos
+            return WorldPos
 
         end
 
@@ -1444,6 +1475,7 @@ local function FireHarvestPrompt(
 
     end
 
+
     local Success =
         pcall(function()
 
@@ -1452,6 +1484,7 @@ local function FireHarvestPrompt(
             )
 
         end)
+
 
     if Success then
 
@@ -1485,6 +1518,7 @@ local function HarvestOneTimePlant(
             "SeedName"
         )
 
+
     if not ONE_TIME_PLANTS[
         SeedName
     ] then
@@ -1493,14 +1527,17 @@ local function HarvestOneTimePlant(
 
     end
 
+
     local Mutation =
         Plant:GetAttribute(
             "Mutation"
         )
 
+
     if not Mutation then
         return false
     end
+
 
     return FireHarvestPrompt(
         Plant
@@ -1523,10 +1560,13 @@ local function GetFruitName(
         )
 
     if SeedName then
+
         return tostring(
             SeedName
         )
+
     end
+
 
     local FruitName =
         Fruit:GetAttribute(
@@ -1534,10 +1574,13 @@ local function GetFruitName(
         )
 
     if FruitName then
+
         return tostring(
             FruitName
         )
+
     end
+
 
     return tostring(
         Fruit.Name
@@ -1558,10 +1601,12 @@ local function HarvestFruit(
         return false
     end
 
+
     local CorePartName =
         Fruit:GetAttribute(
             "CorePartName"
         )
+
 
     if BLACKLIST[
         CorePartName
@@ -1570,6 +1615,7 @@ local function HarvestFruit(
         return false
 
     end
+
 
     local FruitName =
         GetFruitName(
@@ -1586,11 +1632,13 @@ local function HarvestFruit(
                 "Mutation"
             )
 
+
         if not Mutation then
             return false
         end
 
     end
+
 
     return FireHarvestPrompt(
         Fruit
@@ -1610,6 +1658,7 @@ local function HarvestPlant(
     if not Plant then
         return
     end
+
 
     local SeedName =
         Plant:GetAttribute(
@@ -1640,6 +1689,7 @@ local function HarvestPlant(
             "Fruits"
         )
 
+
     if not Fruits then
         return
     end
@@ -1660,6 +1710,7 @@ local function HarvestPlant(
             continue
 
         end
+
 
         HarvestFruit(
             Fruit
@@ -1684,6 +1735,7 @@ local function HarvestPlant(
 
         end
 
+
         HarvestFruit(
             Fruit
         )
@@ -1706,14 +1758,17 @@ local function AutoHarvest()
         return
     end
 
+
     local Plants =
         Plot:FindFirstChild(
             "Plants"
         )
 
+
     if not Plants then
         return
     end
+
 
     for _, Plant in ipairs(
         Plants:GetChildren()
@@ -1744,6 +1799,7 @@ local function SellAll()
 
         end)
 
+
     if not Success
         or not Preview then
 
@@ -1751,14 +1807,17 @@ local function SellAll()
 
     end
 
+
     local FruitCount =
         tonumber(
             Preview.FruitCount
         ) or 0
 
+
     if FruitCount <= 0 then
         return
     end
+
 
     pcall(function()
 
@@ -1791,11 +1850,13 @@ local function SortSeeds(
 
             end
 
+
             return A.RarityValue
                 > B.RarityValue
 
         end
     )
+
 
     return Seeds
 
@@ -1815,6 +1876,7 @@ local function FindLowestReplaceablePlant(
     local LowestRarityValue =
         math.huge
 
+
     for _, Plant in ipairs(
         GetPlants()
     ) do
@@ -1824,15 +1886,18 @@ local function FindLowestReplaceablePlant(
                 "SeedName"
             )
 
+
         if not PlantSeedName then
             continue
         end
+
 
         local PlantRarity,
             PlantRarityValue =
             GetRarityFromSeedName(
                 PlantSeedName
             )
+
 
         if not PlantRarity then
 
@@ -1845,11 +1910,54 @@ local function FindLowestReplaceablePlant(
 
         end
 
+
         local CanReplace = false
+
 
         for _, SeedData in ipairs(
             ValidSeeds
         ) do
+
+            --==================================================
+            -- DO NOT USE BLACKLISTED SEED
+            --==================================================
+
+            if DO_NOT_PLANT[
+                SeedData.SeedName
+            ] then
+
+                continue
+
+            end
+
+
+            --==================================================
+            -- SPECIAL SEED < 50
+            -- JANGAN DIANGGAP UNTUK SHOVEL
+            --==================================================
+
+            if SPECIAL_SEEDS[
+                SeedData.SeedName
+            ] then
+
+                local Count =
+                    tonumber(
+                        SeedData.Tool:
+                            GetAttribute(
+                                "Count"
+                            )
+                    ) or 0
+
+
+                if Count <
+                    SPECIAL_SEED_MIN then
+
+                    continue
+
+                end
+
+            end
+
 
             if SeedData.RarityValue
                 > PlantRarityValue then
@@ -1862,9 +1970,11 @@ local function FindLowestReplaceablePlant(
 
         end
 
+
         if not CanReplace then
             continue
         end
+
 
         if PlantRarityValue
             < LowestRarityValue then
@@ -1878,6 +1988,7 @@ local function FindLowestReplaceablePlant(
         end
 
     end
+
 
     return LowestPlant,
         LowestRarityValue
@@ -1897,17 +2008,21 @@ local function ShovelPlant(
         return false
     end
 
+
     local PlantId =
         Plant:GetAttribute(
             "PlantId"
         )
 
+
     if not PlantId then
         return false
     end
 
+
     local Shovel =
         EquipShovel()
+
 
     if not Shovel then
 
@@ -1919,14 +2034,17 @@ local function ShovelPlant(
 
     end
 
+
     local ShovelType =
         Shovel:GetAttribute(
             "Shovel"
         )
 
+
     if not ShovelType then
         return false
     end
+
 
     local Success =
         pcall(function()
@@ -1934,13 +2052,19 @@ local function ShovelPlant(
             Networking.Shovel
                 .UseShovel
                 :Fire(
+
                     PlantId,
+
                     "",
+
                     ShovelType,
+
                     Shovel
+
                 )
 
         end)
+
 
     if Success then
 
@@ -1949,6 +2073,7 @@ local function ShovelPlant(
         )
 
     end
+
 
     return Success
 
@@ -1966,6 +2091,7 @@ local function EquipSprinkler(
     local Character =
         LocalPlayer.Character
         or LocalPlayer.CharacterAdded:Wait()
+
 
     local Backpack =
         LocalPlayer:WaitForChild(
@@ -2011,6 +2137,7 @@ local function EquipSprinkler(
                     "Humanoid"
                 )
 
+
             if Humanoid then
 
                 Humanoid:EquipTool(
@@ -2023,11 +2150,13 @@ local function EquipSprinkler(
 
             end
 
+
             return Tool
 
         end
 
     end
+
 
     return nil
 
@@ -2044,6 +2173,7 @@ local function EquipWateringCan()
         LocalPlayer.Character
         or LocalPlayer.CharacterAdded:Wait()
 
+
     local Backpack =
         LocalPlayer:WaitForChild(
             "Backpack"
@@ -2055,6 +2185,7 @@ local function EquipWateringCan()
             WATERING_CAN_NAME
         )
 
+
     if Tool then
         return Tool
     end
@@ -2065,12 +2196,14 @@ local function EquipWateringCan()
             WATERING_CAN_NAME
         )
 
+
     if Tool then
 
         local Humanoid =
             Character:FindFirstChildOfClass(
                 "Humanoid"
             )
+
 
         if Humanoid then
 
@@ -2084,9 +2217,11 @@ local function EquipWateringCan()
 
         end
 
+
         return Tool
 
     end
+
 
     return nil
 
@@ -2104,6 +2239,7 @@ local function GetSprinklerFolder(
     if not Plot then
         return nil
     end
+
 
     return Plot:FindFirstChild(
         "Sprinklers"
@@ -2125,6 +2261,7 @@ local function HasSprinkler(
         return false
     end
 
+
     for _, Obj in ipairs(
         Folder:GetChildren()
     ) do
@@ -2139,6 +2276,7 @@ local function HasSprinkler(
 
     end
 
+
     return false
 
 end
@@ -2146,9 +2284,7 @@ end
 
 --==================================================
 -- GET FRONT BED POSITION
---==================================================
--- MENGGUNAKAN FRONT_BedSection
--- TERDEKAT DENGAN Signs.Expand
+-- TERDEKAT DENGAN EXPAND
 --==================================================
 
 local function GetFrontBedPosition(
@@ -2165,6 +2301,7 @@ local function GetFrontBedPosition(
             "Visual"
         )
 
+
     if not Visual then
         return nil
     end
@@ -2174,6 +2311,7 @@ local function GetFrontBedPosition(
         GetExpandPosition(
             Plot
         )
+
 
     if not ExpandPosition then
         return nil
@@ -2206,12 +2344,14 @@ local function GetFrontBedPosition(
 
                     end)
 
+
                 if Success and Pivot then
 
                     Position =
                         Pivot.Position
 
                 end
+
 
             elseif Obj:IsA("BasePart") then
 
@@ -2258,6 +2398,7 @@ local function GetFrontBedPosition(
             "BottomFace"
         )
 
+
     if not BottomFace then
         return nil
     end
@@ -2291,6 +2432,7 @@ local function PlaceSprinklers()
     local Plot =
         GetMyPlot()
 
+
     if not Plot then
         return false
     end
@@ -2301,6 +2443,7 @@ local function PlaceSprinklers()
             "PlotId"
         )
 
+
     if not PlotId then
         return false
     end
@@ -2310,6 +2453,7 @@ local function PlaceSprinklers()
         GetSprinklerFolder(
             Plot
         )
+
 
     if not Folder then
 
@@ -2326,6 +2470,7 @@ local function PlaceSprinklers()
         GetFrontBedPosition(
             Plot
         )
+
 
     if not Base then
 
@@ -2354,6 +2499,7 @@ local function PlaceSprinklers()
                 EquipSprinkler(
                     Name
                 )
+
 
             if Tool then
 
@@ -2391,11 +2537,13 @@ local function PlaceSprinklers()
 
                     PlacedAny = true
 
+
                     print(
                         "[SPRINKLER]",
                         Name,
                         "PLACED"
                     )
+
 
                     task.wait(
                         0.5
@@ -2419,6 +2567,7 @@ local function PlaceSprinklers()
 
 
     UnequipTool()
+
 
     return PlacedAny
 
@@ -2446,6 +2595,7 @@ local function UseWateringCan()
             WATERING_CAN_DELAY
             - TimeSinceLastUse
 
+
         print(
             "[WATER] COOLDOWN | Sisa:",
             math.ceil(
@@ -2453,6 +2603,7 @@ local function UseWateringCan()
             ),
             "detik"
         )
+
 
         return false
 
@@ -2462,6 +2613,7 @@ local function UseWateringCan()
     local Plot =
         GetMyPlot()
 
+
     if not Plot then
         return false
     end
@@ -2469,6 +2621,7 @@ local function UseWateringCan()
 
     local Tool =
         EquipWateringCan()
+
 
     if not Tool then
 
@@ -2485,6 +2638,7 @@ local function UseWateringCan()
         GetFrontBedPosition(
             Plot
         )
+
 
     if not Position then
 
@@ -2523,9 +2677,11 @@ local function UseWateringCan()
         LastWateringCanUse =
             os.clock()
 
+
         print(
             "[WATER] SUPER WATERING CAN USED"
         )
+
 
         print(
             "[WATER] Cooldown:",
@@ -2540,7 +2696,9 @@ local function UseWateringCan()
         0.2
     )
 
+
     UnequipTool()
+
 
     return Success
 
@@ -2559,20 +2717,25 @@ local function PlantSeed(
         return false
     end
 
+
     local Tool =
         SeedData.Tool
+
 
     if not Tool then
         return false
     end
 
+
     local Character =
         LocalPlayer.Character
+
 
     local Backpack =
         LocalPlayer:FindFirstChild(
             "Backpack"
         )
+
 
     if not Character
         or not Backpack then
@@ -2588,6 +2751,7 @@ local function PlantSeed(
                 "Count"
             )
         ) or 0
+
 
     if CurrentCount <= 0 then
         return false
@@ -2619,6 +2783,7 @@ local function PlantSeed(
             "SeedTool"
         )
 
+
     if not SeedTool then
         return false
     end
@@ -2626,6 +2791,7 @@ local function PlantSeed(
 
     local PlantPos =
         GetNextPlantPosition()
+
 
     if not PlantPos then
         return false
@@ -2660,6 +2826,7 @@ local function PlantSeed(
 
     end
 
+
     return false
 
 end
@@ -2676,12 +2843,30 @@ local function ShovelPhase(
     local CurrentPlants =
         CountPlants()
 
+
     local TotalSeedCount = 0
 
 
     for _, SeedData in ipairs(
         ValidSeeds
     ) do
+
+        local SeedName =
+            SeedData.SeedName
+
+
+        --==================================================
+        -- DO NOT PLANT
+        --==================================================
+
+        if DO_NOT_PLANT[
+            SeedName
+        ] then
+
+            continue
+
+        end
+
 
         local Count =
             tonumber(
@@ -2691,16 +2876,18 @@ local function ShovelPhase(
                     )
             ) or 0
 
+
         --==================================================
         -- BAMBOO / MUSHROOM
-        -- HANYA DIHITUNG JIKA >= 50
+        -- HANYA JIKA >= 50
         --==================================================
 
         if SPECIAL_SEEDS[
-            SeedData.SeedName
+            SeedName
         ] then
 
-            if Count >= SPECIAL_SEED_MIN then
+            if Count >=
+                SPECIAL_SEED_MIN then
 
                 TotalSeedCount += Count
 
@@ -2745,12 +2932,14 @@ local function ShovelPhase(
         "========== SHOVEL PHASE =========="
     )
 
+
     print(
         "Plot Level:",
         GetPlotLevel(
             GetMyPlot()
         )
     )
+
 
     print(
         "Plants:",
@@ -2759,10 +2948,12 @@ local function ShovelPhase(
         MAX_PLANTS
     )
 
+
     print(
         "Seeds yang akan ditanam:",
         TotalSeedCount
     )
+
 
     print(
         "Need Shovel:",
@@ -2845,6 +3036,7 @@ local function ShovelPhase(
 
             end
 
+
             task.wait(
                 0.05
             )
@@ -2860,6 +3052,7 @@ local function ShovelPhase(
             BeforeCount then
 
             Shoveled += 1
+
 
             print(
                 "🔨 Shovel:",
@@ -2895,6 +3088,7 @@ local function ShovelPhase(
 
     UnequipTool()
 
+
     task.wait(
         0.15
     )
@@ -2917,6 +3111,24 @@ local function PlantNormalSeed(
 
     if not SeedData then
         return
+    end
+
+
+    --==================================================
+    -- SAFETY
+    --==================================================
+
+    if DO_NOT_PLANT[
+        SeedData.SeedName
+    ] then
+
+        print(
+            "⛔ SKIP:",
+            SeedData.SeedName
+        )
+
+        return
+
     end
 
 
@@ -3000,7 +3212,8 @@ end
 -- PLANT SPECIAL BATCH
 --
 -- BAMBOO / MUSHROOM
--- MINIMUM 50 SEED
+--
+-- MIN 50
 --
 -- SPRINKLER
 -- ↓
@@ -3023,21 +3236,23 @@ local function PlantSpecialBatch(
         "======================================"
     )
 
+
     print(
         " SPECIAL BAMBOO / MUSHROOM BATCH"
     )
+
 
     print(
         "======================================"
     )
 
 
-    --==================================================
-    -- CHECK MINIMUM 50
-    --==================================================
-
     local ReadySeeds = {}
 
+
+    --==================================================
+    -- CHECK MINIMUM
+    --==================================================
 
     for _, SeedData in ipairs(
         SpecialSeeds
@@ -3052,12 +3267,14 @@ local function PlantSpecialBatch(
             ) or 0
 
 
-        if Count >= SPECIAL_SEED_MIN then
+        if Count >=
+            SPECIAL_SEED_MIN then
 
             table.insert(
                 ReadySeeds,
                 SeedData
             )
+
 
             print(
                 "🌱 READY:",
@@ -3099,7 +3316,7 @@ local function PlantSpecialBatch(
 
     print("")
     print(
-        "💦 SPECIAL BATCH -> PLACE SPRINKLERS"
+        "💦 SPECIAL -> PLACE SPRINKLERS"
     )
 
 
@@ -3116,7 +3333,7 @@ local function PlantSpecialBatch(
 
 
     --==================================================
-    -- PLANT SPECIAL SEEDS
+    -- PLANT
     --==================================================
 
     local PlantedAny = false
@@ -3137,11 +3354,6 @@ local function PlantSpecialBatch(
                 ) or 0
 
 
-            --==================================================
-            -- KALAU SUDAH TIDAK CUKUP 1 BATCH
-            -- TETAP TANAM SELAMA SEED AWAL >= 50
-            --==================================================
-
             if CurrentCount <= 0 then
                 break
             end
@@ -3149,6 +3361,7 @@ local function PlantSpecialBatch(
 
             local CurrentPlants =
                 CountPlants()
+
 
             local MAX_PLANTS =
                 GetMaxPlants()
@@ -3191,7 +3404,7 @@ local function PlantSpecialBatch(
 
 
             print(
-                "🌱 SPECIAL PLANT:",
+                "🌱 SPECIAL:",
                 SeedData.SeedName,
                 "| Seed tersisa:",
                 tonumber(
@@ -3221,14 +3434,14 @@ local function PlantSpecialBatch(
 
 
     --==================================================
-    -- WATERING SETELAH SPECIAL PLANT
+    -- WATERING
     --==================================================
 
     if PlantedAny then
 
         print("")
         print(
-            "💦 SPECIAL BATCH -> SUPER WATERING CAN"
+            "💦 SPECIAL -> SUPER WATERING CAN"
         )
 
 
@@ -3250,12 +3463,15 @@ local function PlantSpecialBatch(
         "======================================"
     )
 
+
     print(
         " SPECIAL BATCH SELESAI"
     )
 
+
     print(
         "======================================"
+
     )
 
 end
@@ -3334,7 +3550,7 @@ local function PlantPhase()
 
 
     --==================================================
-    -- PISAHKAN SPECIAL
+    -- PISAHKAN
     --==================================================
 
     local SpecialSeeds = {}
@@ -3345,6 +3561,28 @@ local function PlantPhase()
     for _, SeedData in ipairs(
         ValidSeeds
     ) do
+
+        --==================================================
+        -- DO NOT PLANT
+        --==================================================
+
+        if DO_NOT_PLANT[
+            SeedData.SeedName
+        ] then
+
+            print(
+                "⛔ SKIP PLANT:",
+                SeedData.SeedName
+            )
+
+            continue
+
+        end
+
+
+        --==================================================
+        -- SPECIAL
+        --==================================================
 
         if SPECIAL_SEEDS[
             SeedData.SeedName
@@ -3377,7 +3615,7 @@ local function PlantPhase()
 
 
     --==================================================
-    -- NORMAL SEEDS
+    -- NORMAL
     --==================================================
 
     for _, SeedData in ipairs(
@@ -3406,6 +3644,7 @@ local function PlantPhase()
 
     UnequipTool()
 
+
     task.wait(
         0.15
     )
@@ -3426,6 +3665,7 @@ local function SmartPlant()
 
     local Seeds =
         GetSeedTools()
+
 
     if #Seeds == 0 then
         return
@@ -3493,6 +3733,7 @@ local function TryExpand()
     local Plot =
         GetMyPlot()
 
+
     if not Plot then
         return
     end
@@ -3518,6 +3759,7 @@ local function TryExpand()
     local Leaves =
         GetLeaves()
 
+
     if Leaves == nil then
         return
     end
@@ -3534,15 +3776,18 @@ local function TryExpand()
         "========== AUTO EXPAND =========="
     )
 
+
     print(
         "Plot       :",
         Plot.Name
     )
 
+
     print(
         "Level      :",
         Level
     )
+
 
     print(
         "Leaves     :",
@@ -3550,6 +3795,7 @@ local function TryExpand()
             Leaves
         )
     )
+
 
     print(
         "Max Plants :",
@@ -3589,6 +3835,7 @@ local function TryExpand()
         NextLevel
     )
 
+
     print(
         "Required   :",
         FormatNumber(
@@ -3603,12 +3850,14 @@ local function TryExpand()
             "[AUTO EXPAND] Leaves belum cukup."
         )
 
+
         print(
             "[AUTO EXPAND] Kurang:",
             FormatNumber(
                 RequiredLeaves - Leaves
             )
         )
+
 
         return
 
@@ -3618,6 +3867,7 @@ local function TryExpand()
     print(
         "[AUTO EXPAND] Requirement terpenuhi!"
     )
+
 
     print(
         "[AUTO EXPAND] Expand:",
@@ -3643,6 +3893,7 @@ local function TryExpand()
         print(
             "[AUTO EXPAND] Request berhasil."
         )
+
 
         task.wait(
             1
@@ -3670,6 +3921,7 @@ local function TryExpand()
             NewLevel
         )
 
+
         print(
             "[AUTO EXPAND] Max Plants sekarang:",
             NewMaxPlants
@@ -3696,87 +3948,118 @@ print(
     "======================================"
 )
 
+
 print(
-    "          AUTO KAITUN V12 START"
+    "          AUTO KAITUN V13 START"
 )
+
 
 print(
     "======================================"
 )
 
+
 print(
     "LEVEL 1 MAX PLANTS: 200"
 )
+
 
 print(
     "LEVEL 2 MAX PLANTS: 300"
 )
 
+
 print(
     "LEVEL 3 MAX PLANTS: 500"
 )
+
 
 print(
     "PLANT RADIUS:",
     RADIUS
 )
 
+
 print(
     "PLANT AREA: FRONT_BedSection TERDEKAT Signs.Expand"
 )
+
 
 print(
     "AUTO BUY: ON"
 )
 
+
 print(
     "AUTO HARVEST: INDEPENDENT"
 )
+
 
 print(
     "AUTO SELL: INDEPENDENT"
 )
 
+
 print(
     "SMART SHOVEL: ON"
 )
+
 
 print(
     "AUTO PLANT: ON"
 )
 
+
 print(
     "AUTO EXPAND: ON"
 )
+
 
 print(
     "BAMBOO MIN: 50 SEEDS"
 )
 
+
 print(
     "MUSHROOM MIN: 50 SEEDS"
 )
+
 
 print(
     "SPECIAL: SPRINKLER -> PLANT -> WATER"
 )
 
+
+print(
+    "DO NOT PLANT: Atlantic Giant Pumpkin"
+)
+
+
+print(
+    "DO NOT PLANT: Amber Cranberry"
+)
+
+
 print(
     "BAMBOO: MUTATION REQUIRED"
 )
+
 
 print(
     "MUSHROOM: MUTATION REQUIRED"
 )
 
+
 print(
     "ACORN: MUTATION REQUIRED"
 )
+
 
 print(
     "WATERING CAN:",
     WATERING_CAN_NAME
 )
+
 
 print(
     "WATERING COOLDOWN:",
@@ -3784,9 +4067,11 @@ print(
     "SECONDS"
 )
 
+
 print(
     "======================================"
 )
+
 
 print("")
 
@@ -3847,6 +4132,7 @@ task.spawn(function()
 
             local Plot =
                 GetMyPlot()
+
 
             if not Plot then
                 return
