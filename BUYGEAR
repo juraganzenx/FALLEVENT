@@ -2,10 +2,12 @@ local Networking = require(game.ReplicatedStorage.SharedModules.Networking)
 
 local BuyList = {
     -- Sprinkler
-    "SSSSyrup Sprinkler",
+    "Super Syrup Sprinkler",
+    "Syrup Sprinkler",
 
     -- Watering Can
-    "SSSyrup Watering Can",
+    "Super Syrup Watering Can",
+    "Syrup Watering Can",
 
     -- Magic Mail
 
