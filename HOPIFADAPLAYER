@@ -1,0 +1,115 @@
+--==================================================
+-- AUTO HOP IF TARGET PLAYER FOUND
+--==================================================
+
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+
+local LocalPlayer = Players.LocalPlayer
+
+--==================================================
+-- CONFIG
+--==================================================
+
+local CHECK_INTERVAL = 60
+
+local TARGET_PLAYERS = {
+    ["A7K2QX"] = true,
+    ["M9R4TB"] = true,
+    ["Z1W8NP"] = true,
+    ["H5CX3L"] = true,
+    ["Q2V7DM"] = true,
+    ["T8JX9A"] = true,
+    ["SDK3DC"] = true,
+    ["FGN3SH"] = true,
+    ["SG3ASO"] = true,
+    ["DK32A0"] = true,
+    ["12D40D"] = true,
+    ["A3H1OS"] = true,
+    ["J8RM1Q"] = true,
+    ["B6TY4N"] = true,
+    ["FH3KDF"] = true,
+    ["FHK32G"] = true,
+}
+
+--==================================================
+-- FIND TARGET PLAYER
+--==================================================
+
+local function FindTargetPlayer()
+    for _, Player in ipairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer then
+            if TARGET_PLAYERS[Player.Name] then
+                return Player
+            end
+        end
+    end
+
+    return nil
+end
+
+--==================================================
+-- SERVER HOP
+--==================================================
+
+local function ServerHop()
+    warn("[AUTO HOP] Target ditemukan!")
+    warn("[AUTO HOP] Pindah server...")
+
+    task.wait(1)
+
+    TeleportService:Teleport(
+        game.PlaceId,
+        LocalPlayer
+    )
+end
+
+--==================================================
+-- INITIAL CHECK
+--==================================================
+
+local Target = FindTargetPlayer()
+
+if Target then
+    warn("[AUTO HOP] Target ditemukan: " .. Target.Name)
+
+    ServerHop()
+
+    return
+end
+
+warn("[AUTO HOP] Tidak ada target saat start.")
+
+--==================================================
+-- MAIN LOOP
+--==================================================
+
+while true do
+
+    task.wait(CHECK_INTERVAL)
+
+    local TargetPlayer = FindTargetPlayer()
+
+    if TargetPlayer then
+
+        warn("==========================================")
+        warn("[AUTO HOP] TARGET PLAYER DITEMUKAN")
+        warn("[AUTO HOP] Username: " .. TargetPlayer.Name)
+        warn("[AUTO HOP] DisplayName: " .. TargetPlayer.DisplayName)
+        warn("[AUTO HOP] Server akan ditinggalkan...")
+        warn("==========================================")
+
+        ServerHop()
+
+        break
+
+    else
+
+        warn(
+            "[AUTO HOP] Tidak ada target. Check berikutnya dalam "
+            .. CHECK_INTERVAL
+            .. " detik."
+        )
+
+    end
+end
