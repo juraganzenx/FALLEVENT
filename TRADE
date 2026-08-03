@@ -1,0 +1,962 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+
+local LocalPlayer = Players.LocalPlayer
+local Backpack = LocalPlayer:WaitForChild("Backpack")
+
+local Networking = require(
+	ReplicatedStorage.SharedModules.Networking
+)
+
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
+
+local USERNAME = "sangjukie"
+
+local NOTE = "rrr"
+
+local CHECK_INTERVAL = 100
+
+local SAVE_FOLDER = "TradeSchedule"
+local SAVE_FILE = "TradeSchedule.json"
+
+--------------------------------------------------
+-- SEND SCHEDULE
+--------------------------------------------------
+
+-- 00:00 - 00:59
+-- 05:00 - 05:59
+-- 10:00 - 10:59
+-- 15:00 - 15:59
+-- 20:00 - 20:59
+
+local SEND_HOURS = {
+	[0] = true,
+	[5] = true,
+	[10] = true,
+	[15] = true,
+	[20] = true
+}
+
+--------------------------------------------------
+-- TARGET PETS
+--------------------------------------------------
+
+local TARGET_PETS = {
+
+	["Fox"] = true,
+
+	["Wolf"] = true,
+
+	["Shadow Dragon"] = true,
+	["ShadowDragon"] = true,
+
+	["Swan"] = true,
+
+}
+
+--------------------------------------------------
+-- SEED + GEAR
+--------------------------------------------------
+
+local NORMAL_ITEMS = {
+
+	--------------------------------------------------
+	-- SEED
+	--------------------------------------------------
+
+	{
+		Category = "Seeds",
+		ItemKey = "Amber Cranberry"
+	},
+
+	{
+		Category = "Seeds",
+		ItemKey = "Maple Venus Fly Trap"
+	},
+
+	{
+		Category = "Seeds",
+		ItemKey = "Maple Pomegranate"
+	},
+
+	{
+		Category = "Seeds",
+		ItemKey = "Maple Poison Apple"
+	},
+
+	{
+		Category = "Seeds",
+		ItemKey = "Maple Venom Spitter"
+	},
+
+	{
+		Category = "Seeds",
+		ItemKey = "Conifer Cone"
+	},
+
+	--------------------------------------------------
+	-- GEAR
+	--------------------------------------------------
+
+	{
+		Category = "Gear",
+		ItemKey = "Harp"
+	},
+
+	{
+		Category = "Gear",
+		ItemKey = "Super Syrup Watering Can"
+	},
+
+	{
+		Category = "Gear",
+		ItemKey = "Super Syrup Sprinkler"
+	}
+
+}
+
+--------------------------------------------------
+-- FILE PATH
+--------------------------------------------------
+
+if not isfolder(SAVE_FOLDER) then
+	makefolder(SAVE_FOLDER)
+end
+
+local FILE_PATH =
+	SAVE_FOLDER .. "/" .. SAVE_FILE
+
+--------------------------------------------------
+-- TRADE HISTORY
+--------------------------------------------------
+
+local TradeHistory = {}
+
+--------------------------------------------------
+-- LOAD JSON
+--------------------------------------------------
+
+local function LoadTradeHistory()
+
+	if not isfile(FILE_PATH) then
+
+		print(
+			"[JSON] File belum ada."
+		)
+
+		TradeHistory = {}
+
+		return
+
+	end
+
+	local Success, Result = pcall(function()
+
+		return HttpService:JSONDecode(
+			readfile(FILE_PATH)
+		)
+
+	end)
+
+	if Success and typeof(Result) == "table" then
+
+		TradeHistory = Result
+
+		print(
+			"[JSON] TradeSchedule berhasil dimuat."
+		)
+
+	else
+
+		warn(
+			"[JSON] Gagal membaca TradeSchedule.json."
+		)
+
+		TradeHistory = {}
+
+	end
+
+end
+
+--------------------------------------------------
+-- SAVE JSON
+--------------------------------------------------
+
+local function SaveTradeHistory()
+
+	local Success, Error = pcall(function()
+
+		writefile(
+			FILE_PATH,
+			HttpService:JSONEncode(
+				TradeHistory
+			)
+		)
+
+	end)
+
+	if not Success then
+
+		warn(
+			"[JSON] Gagal save:",
+			Error
+		)
+
+		return false
+
+	end
+
+	return true
+
+end
+
+--------------------------------------------------
+-- DATE
+--------------------------------------------------
+
+local function GetDate()
+
+	return os.date("%Y-%m-%d")
+
+end
+
+--------------------------------------------------
+-- TIME
+--------------------------------------------------
+
+local function GetCurrentHour()
+
+	return tonumber(
+		os.date("%H")
+	)
+
+end
+
+--------------------------------------------------
+-- CURRENT SLOT
+--------------------------------------------------
+
+local function GetCurrentSlot()
+
+	local Hour =
+		GetCurrentHour()
+
+	if SEND_HOURS[Hour] then
+
+		return string.format(
+			"%02d",
+			Hour
+		)
+
+	end
+
+	return nil
+
+end
+
+--------------------------------------------------
+-- CHECK SLOT
+--------------------------------------------------
+
+local function HasSent(
+	Date,
+	Slot
+)
+
+	if not TradeHistory[Date] then
+
+		return false
+
+	end
+
+	return TradeHistory[Date][Slot] == true
+
+end
+
+--------------------------------------------------
+-- MARK SLOT
+--------------------------------------------------
+
+local function MarkSent(
+	Date,
+	Slot
+)
+
+	if not TradeHistory[Date] then
+
+		TradeHistory[Date] = {}
+
+	end
+
+	TradeHistory[Date][Slot] = true
+
+	return SaveTradeHistory()
+
+end
+
+--------------------------------------------------
+-- CLEAN OLD DATA
+--------------------------------------------------
+
+local function CleanOldData()
+
+	local Today =
+		GetDate()
+
+	local Changed = false
+
+	for Date in pairs(TradeHistory) do
+
+		if Date ~= Today then
+
+			TradeHistory[Date] = nil
+
+			Changed = true
+
+		end
+
+	end
+
+	if Changed then
+
+		SaveTradeHistory()
+
+	end
+
+end
+
+--------------------------------------------------
+-- GET USER ID
+--------------------------------------------------
+
+local UserId
+
+do
+
+	local Success, Result =
+		pcall(function()
+
+			return Players:GetUserIdFromNameAsync(
+				USERNAME
+			)
+
+		end)
+
+	if not Success then
+
+		warn(
+			"[USER] Gagal mendapatkan UserId:",
+			Result
+		)
+
+		return
+
+	end
+
+	UserId = Result
+
+	print(
+		"[USER] Target:",
+		USERNAME
+	)
+
+	print(
+		"[USER] UserId:",
+		UserId
+	)
+
+end
+
+--------------------------------------------------
+-- GET ITEM COUNT
+--------------------------------------------------
+
+local function GetItemCount(
+	ItemName
+)
+
+	local Item =
+		Backpack:FindFirstChild(
+			ItemName
+		)
+
+	if not Item then
+
+		return 0
+
+	end
+
+	local Count =
+		Item:GetAttribute(
+			"Count"
+		)
+
+	if typeof(Count) == "number" then
+
+		return Count
+
+	end
+
+	return 0
+
+end
+
+--------------------------------------------------
+-- UNEQUIP
+--------------------------------------------------
+
+local function UnequipTargetPets()
+
+	local Character =
+		LocalPlayer.Character
+
+	if not Character then
+
+		return
+
+	end
+
+	local Humanoid =
+		Character:FindFirstChildOfClass(
+			"Humanoid"
+		)
+
+	if Humanoid then
+
+		Humanoid:UnequipTools()
+
+	end
+
+	task.wait(0.3)
+
+	--------------------------------------------------
+	-- FORCE TARGET PET BACK TO BACKPACK
+	--------------------------------------------------
+
+	for _, Tool in ipairs(
+		Character:GetChildren()
+	) do
+
+		if Tool:IsA("Tool") then
+
+			if TARGET_PETS[Tool.Name] then
+
+				Tool.Parent = Backpack
+
+			end
+
+		end
+
+	end
+
+end
+
+--------------------------------------------------
+-- BUILD NORMAL ITEMS
+--------------------------------------------------
+
+local function BuildNormalItems()
+
+	local TradeItems = {}
+
+	for _, ItemData in ipairs(
+		NORMAL_ITEMS
+	) do
+
+		local Count =
+			GetItemCount(
+				ItemData.ItemKey
+			)
+
+		if Count > 0 then
+
+			table.insert(
+				TradeItems,
+				{
+					Category = ItemData.Category,
+					ItemKey = ItemData.ItemKey,
+					Count = Count
+				}
+			)
+
+			print(
+				"[ITEM]",
+				ItemData.Category,
+				ItemData.ItemKey,
+				"x" .. Count
+			)
+
+		end
+
+	end
+
+	return TradeItems
+
+end
+
+--------------------------------------------------
+-- BUILD PET ITEMS
+--------------------------------------------------
+
+local function BuildPetItems()
+
+	local TradeItems = {}
+
+	local FoundPetIds = {}
+
+	--------------------------------------------------
+	-- UNEQUIP FIRST
+	--------------------------------------------------
+
+	UnequipTargetPets()
+
+	task.wait(0.3)
+
+	--------------------------------------------------
+	-- SCAN BACKPACK
+	--------------------------------------------------
+
+	for _, Tool in ipairs(
+		Backpack:GetChildren()
+	) do
+
+		if not Tool:IsA("Tool") then
+
+			continue
+
+		end
+
+		--------------------------------------------------
+		-- CHECK PET NAME
+		--------------------------------------------------
+
+		if not TARGET_PETS[Tool.Name] then
+
+			continue
+
+		end
+
+		--------------------------------------------------
+		-- GET PET ID
+		--------------------------------------------------
+
+		local PetId =
+			Tool:GetAttribute(
+				"PetId"
+			)
+
+		if not PetId then
+
+			warn(
+				"[PET] PetId Missing:",
+				Tool.Name
+			)
+
+			continue
+
+		end
+
+		--------------------------------------------------
+		-- PREVENT DUPLICATE
+		--------------------------------------------------
+
+		if FoundPetIds[PetId] then
+
+			continue
+
+		end
+
+		FoundPetIds[PetId] = true
+
+		--------------------------------------------------
+		-- ADD PET
+		--------------------------------------------------
+
+		table.insert(
+			TradeItems,
+			{
+				Category = "Pets",
+				ItemKey = PetId,
+				Count = 1
+			}
+		)
+
+		print(
+			"[PET]",
+			Tool.Name,
+			"| PetId:",
+			PetId
+		)
+
+	end
+
+	return TradeItems
+
+end
+
+--------------------------------------------------
+-- BUILD ALL ITEMS
+--------------------------------------------------
+
+local function BuildTradeList()
+
+	local TradeItems = {}
+
+	--------------------------------------------------
+	-- SEEDS + GEAR
+	--------------------------------------------------
+
+	local NormalItems =
+		BuildNormalItems()
+
+	for _, Item in ipairs(
+		NormalItems
+	) do
+
+		table.insert(
+			TradeItems,
+			Item
+		)
+
+	end
+
+	--------------------------------------------------
+	-- PETS
+	--------------------------------------------------
+
+	local PetItems =
+		BuildPetItems()
+
+	for _, Item in ipairs(
+		PetItems
+	) do
+
+		table.insert(
+			TradeItems,
+			Item
+		)
+
+	end
+
+	return TradeItems
+
+end
+
+--------------------------------------------------
+-- PRINT TRADE LIST
+--------------------------------------------------
+
+local function PrintTradeList(
+	TradeItems
+)
+
+	print("======================================")
+	print("[TRADE] ITEMS TO SEND")
+	print("======================================")
+
+	for Index, Item in ipairs(
+		TradeItems
+	) do
+
+		print(
+			Index,
+			"|",
+			Item.Category,
+			"|",
+			Item.ItemKey,
+			"| x" .. Item.Count
+		)
+
+	end
+
+	print("======================================")
+
+end
+
+--------------------------------------------------
+-- SEND TRADE
+--------------------------------------------------
+
+local function TryTrade()
+
+	print("")
+	print("======================================")
+	print("[TRADE] CHECK INVENTORY")
+	print(
+		"Time:",
+		os.date("%Y-%m-%d %H:%M:%S")
+	)
+	print("======================================")
+
+	--------------------------------------------------
+	-- BUILD LIST
+	--------------------------------------------------
+
+	local TradeItems =
+		BuildTradeList()
+
+	--------------------------------------------------
+	-- NO ITEM
+	--------------------------------------------------
+
+	if #TradeItems == 0 then
+
+		print(
+			"[TRADE] Tidak ada item target."
+		)
+
+		return false
+
+	end
+
+	--------------------------------------------------
+	-- PRINT
+	--------------------------------------------------
+
+	PrintTradeList(
+		TradeItems
+	)
+
+	--------------------------------------------------
+	-- SEND
+	--------------------------------------------------
+
+	local Success, Result =
+		pcall(function()
+
+			return Networking.Mailbox.SendBatch:Fire(
+				UserId,
+				TradeItems,
+				NOTE
+			)
+
+		end)
+
+	--------------------------------------------------
+	-- FAILED
+	--------------------------------------------------
+
+	if not Success then
+
+		warn(
+			"[TRADE] SendBatch gagal:",
+			Result
+		)
+
+		return false
+
+	end
+
+	--------------------------------------------------
+	-- SUCCESS
+	--------------------------------------------------
+
+	print("")
+	print("======================================")
+	print("[TRADE] SUCCESS")
+	print("======================================")
+	print(
+		"Target:",
+		USERNAME
+	)
+	print(
+		"UserId:",
+		UserId
+	)
+	print(
+		"Items:",
+		#TradeItems
+	)
+	print(
+		"Time:",
+		os.date("%Y-%m-%d %H:%M:%S")
+	)
+	print("======================================")
+	print("")
+
+	return true
+
+end
+
+--------------------------------------------------
+-- LOAD
+--------------------------------------------------
+
+LoadTradeHistory()
+
+CleanOldData()
+
+--------------------------------------------------
+-- SHOW CURRENT JSON
+--------------------------------------------------
+
+do
+
+	local Date =
+		GetDate()
+
+	local Slot =
+		GetCurrentSlot()
+
+	print("======================================")
+	print("[SCHEDULE]")
+	print("Date:", Date)
+	print("Current Hour:", GetCurrentHour())
+	print("Current Slot:", Slot or "NONE")
+	print("======================================")
+
+	if Slot then
+
+		if HasSent(
+			Date,
+			Slot
+		) then
+
+			print(
+				"[SCHEDULE] Slot",
+				Slot,
+				"SUDAH DIKIRIM."
+			)
+
+		else
+
+			print(
+				"[SCHEDULE] Slot",
+				Slot,
+				"BELUM DIKIRIM."
+			)
+
+		end
+
+	end
+
+end
+
+--------------------------------------------------
+-- MAIN LOOP
+--------------------------------------------------
+
+while true do
+
+	--------------------------------------------------
+	-- CURRENT DATE
+	--------------------------------------------------
+
+	local Date =
+		GetDate()
+
+	--------------------------------------------------
+	-- CURRENT SLOT
+	--------------------------------------------------
+
+	local Slot =
+		GetCurrentSlot()
+
+	--------------------------------------------------
+	-- ACTIVE WINDOW
+	--------------------------------------------------
+
+	if Slot then
+
+		--------------------------------------------------
+		-- CHECK JSON
+		--------------------------------------------------
+
+		if HasSent(
+			Date,
+			Slot
+		) then
+
+			print(
+				"[SCHEDULE]",
+				Date,
+				"Slot",
+				Slot,
+				"-> ALREADY SENT"
+			)
+
+		else
+
+			print(
+				"[SCHEDULE]",
+				Date,
+				"Slot",
+				Slot,
+				"-> ACTIVE"
+			)
+
+			--------------------------------------------------
+			-- TRY SEND
+			--------------------------------------------------
+
+			local Success =
+				TryTrade()
+
+			--------------------------------------------------
+			-- ONLY SAVE IF SUCCESS
+			--------------------------------------------------
+
+			if Success then
+
+				local Saved =
+					MarkSent(
+						Date,
+						Slot
+					)
+
+				if Saved then
+
+					print(
+						"[SCHEDULE] Slot",
+						Slot,
+						"BERHASIL DISIMPAN."
+					)
+
+				else
+
+					warn(
+						"[SCHEDULE] Trade berhasil, tetapi gagal save JSON!"
+					)
+
+				end
+
+			else
+
+				print(
+					"[SCHEDULE] Belum berhasil."
+				)
+
+				print(
+					"[SCHEDULE] Akan mencoba lagi dalam",
+					CHECK_INTERVAL,
+					"detik."
+				)
+
+			end
+
+		end
+
+	else
+
+		--------------------------------------------------
+		-- OUTSIDE WINDOW
+		--------------------------------------------------
+
+		print(
+			"[SCHEDULE] Tidak dalam waktu pengiriman."
+		)
+
+	end
+
+	--------------------------------------------------
+	-- WAIT
+	--------------------------------------------------
+
+	task.wait(
+		CHECK_INTERVAL
+	)
+
+end
