@@ -13,14 +13,27 @@ local Networking = require(
 -- CONFIG
 --------------------------------------------------
 
-local USERNAME = "sangjukie"
+local TARGET_USERNAME = "sangjukie"
 
 local NOTE = "rrr"
 
+-- Cek setiap 10 detik
 local CHECK_INTERVAL = 10
 
+--------------------------------------------------
+-- SAVE CONFIG
+--------------------------------------------------
+
 local SAVE_FOLDER = "TradeSchedule"
-local SAVE_FILE = "TradeSchedule.json"
+
+--------------------------------------------------
+-- FILE BERDASARKAN USERNAME AKUN SENDIRI
+--------------------------------------------------
+
+local SAVE_FILE = LocalPlayer.Name .. ".json"
+
+local FILE_PATH =
+	SAVE_FOLDER .. "/" .. SAVE_FILE
 
 --------------------------------------------------
 -- SEND SCHEDULE
@@ -33,11 +46,13 @@ local SAVE_FILE = "TradeSchedule.json"
 -- 20:00 - 20:59
 
 local SEND_HOURS = {
+
 	[0] = true,
 	[5] = true,
 	[10] = true,
 	[15] = true,
 	[20] = true
+
 }
 
 --------------------------------------------------
@@ -53,7 +68,7 @@ local TARGET_PETS = {
 	["Shadow Dragon"] = true,
 	["ShadowDragon"] = true,
 
-	["Swan"] = true,
+	["Swan"] = true
 
 }
 
@@ -108,31 +123,32 @@ local NORMAL_ITEMS = {
 
 	{
 		Category = "Gear",
-		ItemKey = "HHarp"
+		ItemKey = "HHHHarp"
 	},
 
 	{
 		Category = "Gear",
-		ItemKey = "Super Syrup Watering Can"
+		ItemKey = "SSSSSuper Syrup Watering Can"
 	},
 
 	{
 		Category = "Gear",
-		ItemKey = "Super Syrup Sprinkler"
+		ItemKey = "SSSSSuper Syrup Sprinkler"
 	}
 
 }
 
 --------------------------------------------------
--- FILE PATH
+-- CREATE SAVE FOLDER
 --------------------------------------------------
 
 if not isfolder(SAVE_FOLDER) then
-	makefolder(SAVE_FOLDER)
-end
 
-local FILE_PATH =
-	SAVE_FOLDER .. "/" .. SAVE_FILE
+	makefolder(
+		SAVE_FOLDER
+	)
+
+end
 
 --------------------------------------------------
 -- TRADE HISTORY
@@ -146,10 +162,18 @@ local TradeHistory = {}
 
 local function LoadTradeHistory()
 
+	--------------------------------------------------
+	-- FILE HANYA BERDASARKAN LOCALPLAYER.NAME
+	--------------------------------------------------
+
 	if not isfile(FILE_PATH) then
 
 		print(
-			"[JSON] File belum ada."
+			"[JSON] File belum ada:"
+		)
+
+		print(
+			FILE_PATH
 		)
 
 		TradeHistory = {}
@@ -158,31 +182,61 @@ local function LoadTradeHistory()
 
 	end
 
-	local Success, Result = pcall(function()
+	--------------------------------------------------
+	-- READ FILE
+	--------------------------------------------------
 
-		return HttpService:JSONDecode(
-			readfile(FILE_PATH)
-		)
+	local Success, Result =
+		pcall(function()
 
-	end)
+			return HttpService:JSONDecode(
+				readfile(FILE_PATH)
+			)
 
-	if Success and typeof(Result) == "table" then
+		end)
 
-		TradeHistory = Result
+	--------------------------------------------------
+	-- INVALID JSON
+	--------------------------------------------------
 
-		print(
-			"[JSON] TradeSchedule berhasil dimuat."
-		)
-
-	else
+	if not Success then
 
 		warn(
-			"[JSON] Gagal membaca TradeSchedule.json."
+			"[JSON] Gagal membaca file:"
+		)
+
+		warn(
+			FILE_PATH
 		)
 
 		TradeHistory = {}
 
+		return
+
 	end
+
+	--------------------------------------------------
+	-- VALID JSON
+	--------------------------------------------------
+
+	if typeof(Result) ~= "table" then
+
+		warn(
+			"[JSON] Data bukan table."
+		)
+
+		TradeHistory = {}
+
+		return
+
+	end
+
+	TradeHistory = Result
+
+	print(
+		"[JSON] Loaded:",
+		FILE_PATH
+	)
 
 end
 
@@ -192,16 +246,17 @@ end
 
 local function SaveTradeHistory()
 
-	local Success, Error = pcall(function()
+	local Success, Error =
+		pcall(function()
 
-		writefile(
-			FILE_PATH,
-			HttpService:JSONEncode(
-				TradeHistory
+			writefile(
+				FILE_PATH,
+				HttpService:JSONEncode(
+					TradeHistory
+				)
 			)
-		)
 
-	end)
+		end)
 
 	if not Success then
 
@@ -219,17 +274,19 @@ local function SaveTradeHistory()
 end
 
 --------------------------------------------------
--- DATE
+-- GET DATE
 --------------------------------------------------
 
 local function GetDate()
 
-	return os.date("%Y-%m-%d")
+	return os.date(
+		"%Y-%m-%d"
+	)
 
 end
 
 --------------------------------------------------
--- TIME
+-- GET CURRENT HOUR
 --------------------------------------------------
 
 local function GetCurrentHour()
@@ -241,7 +298,7 @@ local function GetCurrentHour()
 end
 
 --------------------------------------------------
--- CURRENT SLOT
+-- GET CURRENT SLOT
 --------------------------------------------------
 
 local function GetCurrentSlot()
@@ -282,7 +339,7 @@ local function HasSent(
 end
 
 --------------------------------------------------
--- MARK SLOT
+-- MARK SLOT SENT
 --------------------------------------------------
 
 local function MarkSent(
@@ -313,7 +370,9 @@ local function CleanOldData()
 
 	local Changed = false
 
-	for Date in pairs(TradeHistory) do
+	for Date in pairs(
+		TradeHistory
+	) do
 
 		if Date ~= Today then
 
@@ -334,10 +393,10 @@ local function CleanOldData()
 end
 
 --------------------------------------------------
--- GET USER ID
+-- GET TARGET USER ID
 --------------------------------------------------
 
-local UserId
+local TargetUserId
 
 do
 
@@ -345,7 +404,7 @@ do
 		pcall(function()
 
 			return Players:GetUserIdFromNameAsync(
-				USERNAME
+				TARGET_USERNAME
 			)
 
 		end)
@@ -353,7 +412,10 @@ do
 	if not Success then
 
 		warn(
-			"[USER] Gagal mendapatkan UserId:",
+			"[USER] Gagal mendapatkan UserId:"
+		)
+
+		warn(
 			Result
 		)
 
@@ -361,16 +423,16 @@ do
 
 	end
 
-	UserId = Result
+	TargetUserId = Result
 
 	print(
 		"[USER] Target:",
-		USERNAME
+		TARGET_USERNAME
 	)
 
 	print(
-		"[USER] UserId:",
-		UserId
+		"[USER] Target UserId:",
+		TargetUserId
 	)
 
 end
@@ -436,6 +498,10 @@ local function UnequipTargetPets()
 	end
 
 	task.wait(0.3)
+
+	--------------------------------------------------
+	-- MOVE TARGET PET TO BACKPACK
+	--------------------------------------------------
 
 	for _, Tool in ipairs(
 		Character:GetChildren()
@@ -524,6 +590,10 @@ local function BuildPetItems()
 		Backpack:GetChildren()
 	) do
 
+		--------------------------------------------------
+		-- MUST BE TOOL
+		--------------------------------------------------
+
 		if not Tool:IsA("Tool") then
 
 			continue
@@ -531,7 +601,7 @@ local function BuildPetItems()
 		end
 
 		--------------------------------------------------
-		-- CHECK PET
+		-- CHECK PET NAME
 		--------------------------------------------------
 
 		if not TARGET_PETS[Tool.Name] then
@@ -561,7 +631,7 @@ local function BuildPetItems()
 		end
 
 		--------------------------------------------------
-		-- PREVENT DUPLICATE
+		-- DUPLICATE PET ID
 		--------------------------------------------------
 
 		if FoundPetIds[PetId] then
@@ -678,7 +748,7 @@ local function PrintTradeList(
 end
 
 --------------------------------------------------
--- SEND TRADE
+-- TRY TRADE
 --------------------------------------------------
 
 local function TryTrade()
@@ -686,14 +756,29 @@ local function TryTrade()
 	print("")
 	print("======================================")
 	print("[TRADE] CHECK INVENTORY")
+	print("======================================")
+
+	print(
+		"Account:",
+		LocalPlayer.Name
+	)
+
+	print(
+		"Target:",
+		TARGET_USERNAME
+	)
+
 	print(
 		"Time:",
-		os.date("%Y-%m-%d %H:%M:%S")
+		os.date(
+			"%Y-%m-%d %H:%M:%S"
+		)
 	)
+
 	print("======================================")
 
 	--------------------------------------------------
-	-- BUILD
+	-- BUILD TRADE LIST
 	--------------------------------------------------
 
 	local TradeItems =
@@ -729,7 +814,7 @@ local function TryTrade()
 		pcall(function()
 
 			return Networking.Mailbox.SendBatch:Fire(
-				UserId,
+				TargetUserId,
 				TradeItems,
 				NOTE
 			)
@@ -743,7 +828,10 @@ local function TryTrade()
 	if not Success then
 
 		warn(
-			"[TRADE] SendBatch gagal:",
+			"[TRADE] SendBatch gagal:"
+		)
+
+		warn(
 			Result
 		)
 
@@ -759,22 +847,29 @@ local function TryTrade()
 	print("======================================")
 	print("[TRADE] SUCCESS")
 	print("======================================")
+
+	print(
+		"From:",
+		LocalPlayer.Name
+	)
+
 	print(
 		"Target:",
-		USERNAME
+		TARGET_USERNAME
 	)
+
 	print(
-		"UserId:",
-		UserId
-	)
-	print(
-		"Items:",
+		"Total Items:",
 		#TradeItems
 	)
+
 	print(
 		"Time:",
-		os.date("%Y-%m-%d %H:%M:%S")
+		os.date(
+			"%Y-%m-%d %H:%M:%S"
+		)
 	)
+
 	print("======================================")
 	print("")
 
@@ -791,7 +886,39 @@ LoadTradeHistory()
 CleanOldData()
 
 --------------------------------------------------
--- CURRENT STATUS
+-- SHOW ACCOUNT / FILE
+--------------------------------------------------
+
+print("")
+print("======================================")
+print("[ACCOUNT CONFIG]")
+print("======================================")
+
+print(
+	"LocalPlayer:",
+	LocalPlayer.Name
+)
+
+print(
+	"Save Folder:",
+	SAVE_FOLDER
+)
+
+print(
+	"Save File:",
+	SAVE_FILE
+)
+
+print(
+	"Full Path:",
+	FILE_PATH
+)
+
+print("======================================")
+print("")
+
+--------------------------------------------------
+-- SHOW CURRENT STATUS
 --------------------------------------------------
 
 do
@@ -803,10 +930,29 @@ do
 		GetCurrentSlot()
 
 	print("======================================")
-	print("[SCHEDULE]")
-	print("Date:", Date)
-	print("Current Hour:", GetCurrentHour())
-	print("Current Slot:", Slot or "NONE")
+	print("[SCHEDULE STATUS]")
+	print("======================================")
+
+	print(
+		"Account:",
+		LocalPlayer.Name
+	)
+
+	print(
+		"Date:",
+		Date
+	)
+
+	print(
+		"Current Hour:",
+		GetCurrentHour()
+	)
+
+	print(
+		"Current Slot:",
+		Slot or "NONE"
+	)
+
 	print("======================================")
 
 	if Slot then
@@ -817,17 +963,17 @@ do
 		) then
 
 			print(
-				"[SCHEDULE] Slot",
+				"[STATUS] Slot",
 				Slot,
-				"SUDAH DIKIRIM."
+				"SUDAH DIKIRIM"
 			)
 
 		else
 
 			print(
-				"[SCHEDULE] Slot",
+				"[STATUS] Slot",
 				Slot,
-				"BELUM DIKIRIM."
+				"BELUM DIKIRIM"
 			)
 
 		end
@@ -842,8 +988,16 @@ end
 
 while true do
 
+	--------------------------------------------------
+	-- GET CURRENT DATE
+	--------------------------------------------------
+
 	local Date =
 		GetDate()
+
+	--------------------------------------------------
+	-- GET CURRENT SLOT
+	--------------------------------------------------
 
 	local Slot =
 		GetCurrentSlot()
@@ -855,7 +1009,7 @@ while true do
 	if Slot then
 
 		--------------------------------------------------
-		-- CHECK JSON
+		-- CHECK JSON MILIK AKUN INI
 		--------------------------------------------------
 
 		if HasSent(
@@ -882,14 +1036,14 @@ while true do
 			)
 
 			--------------------------------------------------
-			-- TRY TRADE
+			-- TRY SEND
 			--------------------------------------------------
 
 			local Success =
 				TryTrade()
 
 			--------------------------------------------------
-			-- SAVE ONLY AFTER SUCCESS
+			-- SAVE ONLY IF SUCCESS
 			--------------------------------------------------
 
 			if Success then
@@ -919,13 +1073,11 @@ while true do
 			else
 
 				print(
-					"[SCHEDULE] Belum berhasil."
+					"[SCHEDULE] Pengiriman gagal."
 				)
 
 				print(
-					"[SCHEDULE] Akan mencoba lagi dalam",
-					CHECK_INTERVAL,
-					"detik."
+					"[SCHEDULE] Akan mencoba lagi."
 				)
 
 			end
@@ -939,7 +1091,7 @@ while true do
 		--------------------------------------------------
 
 		print(
-			"[SCHEDULE] Di luar window pengiriman."
+			"[SCHEDULE] Di luar waktu pengiriman."
 		)
 
 	end
