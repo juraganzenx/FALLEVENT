@@ -19,7 +19,7 @@ task.spawn(function()
 end)
 
 --------------------------------------------------
--- ANTI AFK: JUMP SETIAP 30 DETIK
+-- ANTI AFK + TELEPORT TO GARDEN
 --------------------------------------------------
 
 task.spawn(function()
@@ -29,7 +29,14 @@ task.spawn(function()
             local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
             if Humanoid and Humanoid.Health > 0 then
+
+                -- Jump
                 Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+
+                -- Teleport to Garden
+                task.wait(0.5)
+
+                Networking.TeleportButton.Request:Fire("Garden")
             end
         end)
     end
@@ -46,7 +53,6 @@ task.spawn(function()
             local X = math.floor(Viewport.X / 2)
             local Y = math.floor(Viewport.Y / 2)
 
-            -- Mouse Down
             VirtualInputManager:SendMouseButtonEvent(
                 X,
                 Y,
@@ -58,7 +64,6 @@ task.spawn(function()
 
             task.wait(0.05)
 
-            -- Mouse Up
             VirtualInputManager:SendMouseButtonEvent(
                 X,
                 Y,
