@@ -60,16 +60,16 @@ local SEND_HOURS = {
 --------------------------------------------------
 
 local TARGET_PETS = {
+    ["Fox"] = true,
+    ["Wolf"] = true,
+    ["Shadow Dragon"] = true,
+    ["ShadowDragon"] = true,
+    ["Swan"] = true,
 
-	["Fox"] = true,
-
-	["Wolf"] = true,
-
-	["Shadow Dragon"] = true,
-	["ShadowDragon"] = true,
-
-	["Swan"] = true
-
+    ["Dog"] = true,
+    ["Hedgehog"] = true,
+    ["Turkey"] = true,
+    ["Squirrel"] = true
 }
 
 --------------------------------------------------
