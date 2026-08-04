@@ -1,4 +1,4 @@
--- AUTO KAITUN V12
+-- AUTO KAITUN V17
 --==================================================
 -- START 60 DETIK SETELAH EXECUTE
 --
@@ -14,27 +14,27 @@
 -- LEVEL 2 = 300
 -- LEVEL 3 = 500
 --
--- SPECIAL:
--- Maple Bamboo   -> WEATHER REQUIRED
--- Maple Mushroom -> WEATHER REQUIRED
+-- MAPLE BAMBOO:
+-- HANYA PLANT SAAT WEATHER AKTIF
+-- MAX BAMBOO = 100
 --
--- SPECIAL MAX:
--- Maple Bamboo   -> 100
--- Maple Mushroom -> 100
+-- MAPLE MUSHROOM:
+-- NEVER PLANT
 --
--- SPECIAL PLANTS TIDAK TERPENGARUH MAX PLANTS
+-- NEVER PLANT:
+-- Atlantic Giant Pumpkin
+-- Semua Mythic
+-- Semua Super
+-- Maple Mushroom
 --
--- PLANT ORDER SPECIAL:
--- SPRINKLER -> PLANT -> WATERING
+-- SPECIAL BAMBOO:
+-- SPRINKLER -> PLANT -> WATER
 --
 -- MUTATION REQUIRED:
 -- Maple Acorn
 -- Maple Cherry
 -- Maple Dragon Fruit
 -- Maple Sunflower
---
--- NEVER PLANT:
--- Atlantic Giant Pumpkin
 --
 -- PLOT LEVEL:
 -- berdasarkan PLOT MILIK LOCALPLAYER
@@ -194,18 +194,119 @@ local UsedPositions = {}
 
 
 --==================================================
--- SPECIAL PLANT CONFIG
+-- BAMBOO CONFIG
 --==================================================
 
-local SPECIAL_PLANT_MAX = 100
+local BAMBOO_NAME = "Maple Bamboo"
 
-local SPECIAL_PLANTS = {
+local MAX_BAMBOO = 100
 
-    ["Maple Bamboo"] = true,
 
-    ["Maple Mushroom"] = true,
+--==================================================
+-- WEATHER CONFIG
+--==================================================
+--
+-- Bamboo HANYA boleh ditanam jika salah satu
+-- weather/event berikut sedang aktif.
+--
+-- Bloodmoon
+-- Aurora
+-- Lightning
+-- Snowfall / Blizzard
+-- Starfall
+-- Sunburst
+--
+--==================================================
 
-}
+local function IsBambooWeatherActive()
+
+    --------------------------------------------------
+    -- Bloodmoon
+    --------------------------------------------------
+
+    if workspace:FindFirstChild(
+        "ActiveBloodmoon"
+    ) then
+
+        return true, "Bloodmoon"
+
+    end
+
+
+    --------------------------------------------------
+    -- Aurora
+    --------------------------------------------------
+
+    if workspace:GetAttribute(
+        "AuroraEvent"
+    ) then
+
+        return true, "Aurora"
+
+    end
+
+
+    --------------------------------------------------
+    -- Lightning
+    --------------------------------------------------
+
+    local WeatherEffects =
+        workspace:FindFirstChild(
+            "WeatherEffects"
+        )
+
+    if WeatherEffects
+        and WeatherEffects:FindFirstChild(
+            "LightningStrike"
+        ) then
+
+        return true, "Lightning"
+
+    end
+
+
+    --------------------------------------------------
+    -- Blizzard
+    --------------------------------------------------
+
+    if workspace:FindFirstChild(
+        "ActiveBlizzard"
+    ) then
+
+        return true, "Snowfall (Blizzard)"
+
+    end
+
+
+    --------------------------------------------------
+    -- Starfall
+    --------------------------------------------------
+
+    if workspace:GetAttribute(
+        "ShootingStarEvent"
+    ) then
+
+        return true, "Starfall"
+
+    end
+
+
+    --------------------------------------------------
+    -- Sunburst
+    --------------------------------------------------
+
+    if workspace:GetAttribute(
+        "SunburstEvent"
+    ) then
+
+        return true, "Sunburst"
+
+    end
+
+
+    return false, nil
+
+end
 
 
 --==================================================
@@ -381,22 +482,6 @@ local SEED_RARITY = {
 
 
 --==================================================
--- ONE TIME PLANTS
---
--- DIGUNAKAN UNTUK HARVEST LOGIC
--- BUKAN LAGI UNTUK SYARAT 50 SEED
---==================================================
-
-local ONE_TIME_PLANTS = {
-
-    ["Maple Bamboo"] = true,
-
-    ["Maple Mushroom"] = true,
-
-}
-
-
---==================================================
 -- MUTATION REQUIRED FRUITS
 --==================================================
 
@@ -420,6 +505,20 @@ local MUTATION_REQUIRED_FRUITS = {
 local NEVER_PLANT = {
 
     ["Atlantic Giant Pumpkin"] = true,
+
+    ["Maple Mushroom"] = true,
+
+    ["Maple Venus Fly Trap"] = true,
+
+    ["Maple Pomegranate"] = true,
+
+    ["Maple Poison Apple"] = true,
+
+    ["Maple Venom Spitter"] = true,
+
+    ["Conifer Cone"] = true,
+
+    ["Amber Cranberry"] = true,
 
 }
 
@@ -549,8 +648,6 @@ end
 
 --==================================================
 -- GET PLOT LEVEL
---
--- HANYA PLOT MILIK LOCALPLAYER
 --==================================================
 
 local function GetPlotLevel(Plot)
@@ -582,45 +679,25 @@ local function GetPlotLevel(Plot)
         )
 
 
-    --------------------------------------------------
-    -- BELUM SELESAI LOAD
-    --------------------------------------------------
-
     if FrontCount < 2 then
         return 0
     end
 
-
-    --------------------------------------------------
-    -- LEVEL 3
-    --------------------------------------------------
 
     if BedCount >= 4 then
         return 3
     end
 
 
-    --------------------------------------------------
-    -- LEVEL 2
-    --------------------------------------------------
-
     if BedCount >= 2 then
         return 2
     end
 
 
-    --------------------------------------------------
-    -- LEVEL 1
-    --------------------------------------------------
-
     if BedCount == 0 then
         return 1
     end
 
-
-    --------------------------------------------------
-    -- STRUKTUR SEDANG BERUBAH
-    --------------------------------------------------
 
     return 0
 
@@ -691,12 +768,10 @@ end
 
 
 --==================================================
--- COUNT SPECIAL PLANT IN GARDEN
+-- COUNT BAMBOO IN GARDEN
 --==================================================
 
-local function CountSpecialPlantInGarden(
-    SeedName
-)
+local function CountBamboo()
 
     local Count = 0
 
@@ -704,9 +779,13 @@ local function CountSpecialPlantInGarden(
         GetPlants()
     ) do
 
-        if Plant:GetAttribute(
-            "SeedName"
-        ) == SeedName then
+        local SeedName =
+            Plant:GetAttribute(
+                "SeedName"
+            )
+
+        if SeedName ==
+            BAMBOO_NAME then
 
             Count += 1
 
@@ -720,21 +799,18 @@ end
 
 
 --==================================================
--- GET SPECIAL REMAINING
+-- GET BAMBOO NEEDED
 --==================================================
 
-local function GetSpecialPlantRemaining(
-    SeedName
-)
+local function GetBambooNeeded()
 
-    local Current =
-        CountSpecialPlantInGarden(
-            SeedName
-        )
+    local CurrentBamboo =
+        CountBamboo()
 
     return math.max(
         0,
-        SPECIAL_PLANT_MAX - Current
+        MAX_BAMBOO
+        - CurrentBamboo
     )
 
 end
@@ -1174,45 +1250,6 @@ end
 
 
 --==================================================
--- HARVEST ONE TIME PLANT
---==================================================
-
-local function HarvestOneTimePlant(Plant)
-
-    if not Plant then
-        return false
-    end
-
-    local SeedName =
-        Plant:GetAttribute(
-            "SeedName"
-        )
-
-    if not ONE_TIME_PLANTS[
-        SeedName
-    ] then
-
-        return false
-
-    end
-
-    local Mutation =
-        Plant:GetAttribute(
-            "Mutation"
-        )
-
-    if not Mutation then
-        return false
-    end
-
-    return FireHarvestPrompt(
-        Plant
-    )
-
-end
-
-
---==================================================
 -- GET FRUIT NAME
 --==================================================
 
@@ -1299,6 +1336,78 @@ end
 
 
 --==================================================
+-- SORT HARVEST FRUITS
+-- RARITY TERLANGKA -> COMMON
+--==================================================
+
+local function SortHarvestFruits(Fruits)
+
+    table.sort(
+        Fruits,
+        function(A, B)
+
+            local NameA =
+                GetFruitName(A)
+
+            local NameB =
+                GetFruitName(B)
+
+            local _, RarityA =
+                GetRarityFromSeedName(
+                    NameA
+                )
+
+            local _, RarityB =
+                GetRarityFromSeedName(
+                    NameB
+                )
+
+
+            if RarityA
+                == RarityB then
+
+                local MutationA =
+                    A:GetAttribute(
+                        "Mutation"
+                    )
+
+                local MutationB =
+                    B:GetAttribute(
+                        "Mutation"
+                    )
+
+
+                if MutationA
+                    and not MutationB then
+
+                    return true
+
+                elseif MutationB
+                    and not MutationA then
+
+                    return false
+
+                end
+
+
+                return NameA
+                    < NameB
+
+            end
+
+
+            return RarityA
+                > RarityB
+
+        end
+    )
+
+    return Fruits
+
+end
+
+
+--==================================================
 -- HARVEST PLANT
 --==================================================
 
@@ -1308,29 +1417,25 @@ local function HarvestPlant(Plant)
         return
     end
 
+
     local SeedName =
         Plant:GetAttribute(
             "SeedName"
         )
 
 
-    if ONE_TIME_PLANTS[
-        SeedName
-    ] then
-
-        HarvestOneTimePlant(
-            Plant
-        )
-
-        return
-
-    end
-
+    --------------------------------------------------
+    -- HARVEST PLANT PROMPT
+    --------------------------------------------------
 
     FireHarvestPrompt(
         Plant
     )
 
+
+    --------------------------------------------------
+    -- FRUITS
+    --------------------------------------------------
 
     local Fruits =
         Plant:FindFirstChild(
@@ -1342,23 +1447,15 @@ local function HarvestPlant(Plant)
     end
 
 
-    --------------------------------------------------
-    -- MUTATION FIRST
-    --------------------------------------------------
+    local FruitList = {}
+
 
     for _, Fruit in ipairs(
         Fruits:GetChildren()
     ) do
 
-        if not Fruit:GetAttribute(
-            "Mutation"
-        ) then
-
-            continue
-
-        end
-
-        HarvestFruit(
+        table.insert(
+            FruitList,
             Fruit
         )
 
@@ -1366,20 +1463,21 @@ local function HarvestPlant(Plant)
 
 
     --------------------------------------------------
-    -- NORMAL FRUIT
+    -- RARITY TERLANGKA -> COMMON
+    --------------------------------------------------
+
+    SortHarvestFruits(
+        FruitList
+    )
+
+
+    --------------------------------------------------
+    -- HARVEST
     --------------------------------------------------
 
     for _, Fruit in ipairs(
-        Fruits:GetChildren()
+        FruitList
     ) do
-
-        if Fruit:GetAttribute(
-            "Mutation"
-        ) then
-
-            continue
-
-        end
 
         HarvestFruit(
             Fruit
@@ -1412,8 +1510,53 @@ local function AutoHarvest()
         return
     end
 
-    for _, Plant in ipairs(
+
+    local PlantList =
         Plants:GetChildren()
+
+
+    --------------------------------------------------
+    -- SORT PLANT BERDASARKAN RARITY
+    --------------------------------------------------
+
+    table.sort(
+        PlantList,
+        function(A, B)
+
+            local NameA =
+                A:GetAttribute(
+                    "SeedName"
+                )
+
+            local NameB =
+                B:GetAttribute(
+                    "SeedName"
+                )
+
+            local _, RarityA =
+                GetRarityFromSeedName(
+                    NameA
+                )
+
+            local _, RarityB =
+                GetRarityFromSeedName(
+                    NameB
+                )
+
+
+            return RarityA
+                > RarityB
+
+        end
+    )
+
+
+    --------------------------------------------------
+    -- HARVEST
+    --------------------------------------------------
+
+    for _, Plant in ipairs(
+        PlantList
     ) do
 
         HarvestPlant(
@@ -1510,6 +1653,7 @@ local function FindLowestReplaceablePlant(
     local LowestRarityValue =
         math.huge
 
+
     for _, Plant in ipairs(
         GetPlants()
     ) do
@@ -1523,6 +1667,7 @@ local function FindLowestReplaceablePlant(
             continue
         end
 
+
         local PlantRarity,
             PlantRarityValue =
             GetRarityFromSeedName(
@@ -1530,17 +1675,12 @@ local function FindLowestReplaceablePlant(
             )
 
         if not PlantRarity then
-
-            warn(
-                "⚠️ Unknown SeedName:",
-                PlantSeedName
-            )
-
             continue
-
         end
 
+
         local CanReplace = false
+
 
         for _, SeedData in ipairs(
             ValidSeeds
@@ -1557,9 +1697,11 @@ local function FindLowestReplaceablePlant(
 
         end
 
+
         if not CanReplace then
             continue
         end
+
 
         if PlantRarityValue
             < LowestRarityValue then
@@ -1573,6 +1715,7 @@ local function FindLowestReplaceablePlant(
         end
 
     end
+
 
     return LowestPlant,
         LowestRarityValue
@@ -1741,13 +1884,7 @@ local function GetPlantBedSection()
         )
 
     if not ExpandPosition then
-
-        warn(
-            "[AUTO PLANT] Signs.Expand tidak ditemukan."
-        )
-
         return nil
-
     end
 
 
@@ -1772,13 +1909,7 @@ local function GetPlantBedSection()
 
 
     if #FrontSections == 0 then
-
-        warn(
-            "[AUTO PLANT] FRONT_BedSection tidak ditemukan."
-        )
-
         return nil
-
     end
 
 
@@ -1806,10 +1937,8 @@ local function GetPlantBedSection()
                 end)
 
             if Success and Pivot then
-
                 SectionPosition =
                     Pivot.Position
-
             end
 
         elseif Section:IsA("BasePart") then
@@ -1869,14 +1998,7 @@ local function GetBottomFace()
         )
 
     if not BottomFace then
-
-        warn(
-            "[AUTO PLANT] BottomFace tidak ditemukan:",
-            BedSection:GetFullName()
-        )
-
         return nil
-
     end
 
     return BottomFace
@@ -2115,10 +2237,6 @@ local function EquipSprinkler(Name)
         )
 
 
-    --------------------------------------------------
-    -- ALREADY EQUIPPED
-    --------------------------------------------------
-
     for _, Tool in ipairs(
         Character:GetChildren()
     ) do
@@ -2134,10 +2252,6 @@ local function EquipSprinkler(Name)
 
     end
 
-
-    --------------------------------------------------
-    -- BACKPACK
-    --------------------------------------------------
 
     for _, Tool in ipairs(
         Backpack:GetChildren()
@@ -2419,13 +2533,7 @@ local function UseWateringCan()
         EquipWateringCan()
 
     if not Tool then
-
-        print(
-            "[WATER] Super Watering Can tidak ditemukan."
-        )
-
         return false
-
     end
 
 
@@ -2491,119 +2599,7 @@ end
 
 
 --==================================================
--- WEATHER CHECK
---
--- SPECIAL PLANT WAJIB WEATHER
---==================================================
-
-local function GetActiveWeather()
-
-    --------------------------------------------------
-    -- BLOODMOON
-    --------------------------------------------------
-
-    if workspace:FindFirstChild(
-        "ActiveBloodmoon"
-    ) then
-
-        return "Bloodmoon"
-
-    end
-
-
-    --------------------------------------------------
-    -- AURORA
-    --------------------------------------------------
-
-    if workspace:GetAttribute(
-        "AuroraEvent"
-    ) then
-
-        return "Aurora"
-
-    end
-
-
-    --------------------------------------------------
-    -- LIGHTNING
-    --------------------------------------------------
-
-    local WeatherEffects =
-        workspace:FindFirstChild(
-            "WeatherEffects"
-        )
-
-    if WeatherEffects
-        and WeatherEffects:FindFirstChild(
-            "LightningStrike"
-        ) then
-
-        return "Lightning"
-
-    end
-
-
-    --------------------------------------------------
-    -- BLIZZARD / SNOWFALL
-    --------------------------------------------------
-
-    if workspace:FindFirstChild(
-        "ActiveBlizzard"
-    ) then
-
-        return "Snowfall (Blizzard)"
-
-    end
-
-
-    --------------------------------------------------
-    -- STARFALL
-    --------------------------------------------------
-
-    if workspace:GetAttribute(
-        "ShootingStarEvent"
-    ) then
-
-        return "Starfall"
-
-    end
-
-
-    --------------------------------------------------
-    -- SUNBURST
-    --------------------------------------------------
-
-    if workspace:GetAttribute(
-        "SunburstEvent"
-    ) then
-
-        return "Sunburst"
-
-    end
-
-
-    return nil
-
-end
-
-
---==================================================
--- IS SPECIAL SEED
---==================================================
-
-local function IsSpecialSeed(
-    SeedName
-)
-
-    return SPECIAL_PLANTS[
-        SeedName
-    ] == true
-
-end
-
-
---==================================================
--- CAN PLANT SEED
+-- CAN PLANT NORMAL SEED
 --==================================================
 
 local function CanPlantSeed(
@@ -2633,79 +2629,23 @@ local function CanPlantSeed(
 
 
     --------------------------------------------------
-    -- SPECIAL:
-    -- BAMBOO / MUSHROOM
+    -- BAMBOO
     --
-    -- WEATHER WAJIB
-    -- TIDAK ADA SYARAT 50 SEED
-    -- MAX 100 PER JENIS
+    -- Bamboo hanya saat weather aktif
     --------------------------------------------------
 
-    if SPECIAL_PLANTS[
-        SeedName
-    ] then
+    if SeedName ==
+        BAMBOO_NAME then
 
-        local ActiveWeather =
-            GetActiveWeather()
+        local Active =
+            IsBambooWeatherActive()
 
-
-        --------------------------------------------------
-        -- TANPA WEATHER = STOP
-        --------------------------------------------------
-
-        if not ActiveWeather then
-
+        if not Active then
             return false
-
         end
-
-
-        --------------------------------------------------
-        -- CHECK SPECIAL COUNT
-        --------------------------------------------------
-
-        local GardenCount =
-            CountSpecialPlantInGarden(
-                SeedName
-            )
-
-
-        if GardenCount >=
-            SPECIAL_PLANT_MAX then
-
-            return false
-
-        end
-
-
-        --------------------------------------------------
-        -- CHECK BACKPACK
-        --------------------------------------------------
-
-        local BackpackCount =
-            tonumber(
-                SeedData.Tool:
-                    GetAttribute(
-                        "Count"
-                    )
-            ) or 0
-
-
-        if BackpackCount <= 0 then
-
-            return false
-
-        end
-
-
-        return true
 
     end
 
-
-    --------------------------------------------------
-    -- NORMAL SEED
-    --------------------------------------------------
 
     return true
 
@@ -2834,10 +2774,12 @@ end
 
 
 --==================================================
--- SPECIAL SPRINKLER + PLANT + WATER
+-- SPECIAL BAMBOO SEQUENCE
+--
+-- SPRINKLER -> PLANT -> WATER
 --==================================================
 
-local function SpecialPlantSequence(
+local function BambooPlantSequence(
     SeedData
 )
 
@@ -2846,13 +2788,8 @@ local function SpecialPlantSequence(
     end
 
 
-    local SeedName =
-        SeedData.SeedName
-
-
-    if not IsSpecialSeed(
-        SeedName
-    ) then
+    if SeedData.SeedName ~=
+        BAMBOO_NAME then
 
         return false
 
@@ -2860,14 +2797,15 @@ local function SpecialPlantSequence(
 
 
     --------------------------------------------------
-    -- WEATHER WAJIB
+    -- WEATHER CHECK
     --------------------------------------------------
 
-    local ActiveWeather =
-        GetActiveWeather()
+    local WeatherActive,
+        WeatherName =
+        IsBambooWeatherActive()
 
 
-    if not ActiveWeather then
+    if not WeatherActive then
 
         return false
 
@@ -2875,37 +2813,22 @@ local function SpecialPlantSequence(
 
 
     --------------------------------------------------
-    -- CHECK GARDEN COUNT
+    -- BAMBOO COUNT
     --------------------------------------------------
 
-    local GardenCount =
-        CountSpecialPlantInGarden(
-            SeedName
-        )
+    local CurrentBamboo =
+        CountBamboo()
 
 
-    if GardenCount >=
-        SPECIAL_PLANT_MAX then
-
-        print(
-            "[SPECIAL MAX]",
-            SeedName,
-            "|",
-            GardenCount,
-            "/",
-            SPECIAL_PLANT_MAX
-        )
+    if CurrentBamboo >=
+        MAX_BAMBOO then
 
         return false
 
     end
 
 
-    --------------------------------------------------
-    -- CHECK BACKPACK
-    --------------------------------------------------
-
-    local Count =
+    local SeedCount =
         tonumber(
             SeedData.Tool:
                 GetAttribute(
@@ -2914,10 +2837,21 @@ local function SpecialPlantSequence(
         ) or 0
 
 
-    if Count <= 0 then
-
+    if SeedCount <= 0 then
         return false
+    end
 
+
+    local Needed =
+        math.min(
+            SeedCount,
+            MAX_BAMBOO
+                - CurrentBamboo
+        )
+
+
+    if Needed <= 0 then
+        return false
     end
 
 
@@ -2927,25 +2861,25 @@ local function SpecialPlantSequence(
     )
 
     print(
-        "[SPECIAL]",
-        SeedName
+        "[BAMBOO WEATHER]",
+        WeatherName
     )
 
     print(
-        "Weather:",
-        ActiveWeather
-    )
-
-    print(
-        "Garden:",
-        GardenCount,
+        "Garden Bamboo:",
+        CurrentBamboo,
         "/",
-        SPECIAL_PLANT_MAX
+        MAX_BAMBOO
     )
 
     print(
-        "Backpack:",
-        Count
+        "Backpack Bamboo:",
+        SeedCount
+    )
+
+    print(
+        "Need Plant:",
+        Needed
     )
 
     print(
@@ -2958,7 +2892,7 @@ local function SpecialPlantSequence(
 
 
     --------------------------------------------------
-    -- SPRINKLER DULU
+    -- SPRINKLER
     --------------------------------------------------
 
     pcall(function()
@@ -2975,93 +2909,158 @@ local function SpecialPlantSequence(
 
 
     --------------------------------------------------
-    -- WEATHER MASIH HARUS AKTIF
+    -- PLANT BAMBOO
     --------------------------------------------------
 
-    ActiveWeather =
-        GetActiveWeather()
+    local Planted = 0
 
 
-    if not ActiveWeather then
+    while Planted <
+        Needed do
+
+
+        --------------------------------------------------
+        -- RECHECK WEATHER
+        --------------------------------------------------
+
+        local ActiveNow =
+            IsBambooWeatherActive()
+
+        if not ActiveNow then
+
+            print(
+                "[BAMBOO] Weather selesai."
+            )
+
+            break
+
+        end
+
+
+        --------------------------------------------------
+        -- RECHECK GARDEN
+        --------------------------------------------------
+
+        if CountBamboo()
+            >= MAX_BAMBOO then
+
+            break
+
+        end
+
+
+        local CurrentCount =
+            tonumber(
+                SeedData.Tool:
+                    GetAttribute(
+                        "Count"
+                    )
+            ) or 0
+
+
+        if CurrentCount <= 0 then
+            break
+        end
+
+
+        local Success =
+            PlantSeed(
+                SeedData
+            )
+
+
+        if not Success then
+
+            warn(
+                "[BAMBOO] Gagal plant."
+            )
+
+            break
+
+        end
+
+
+        Planted += 1
+
 
         print(
-            "[SPECIAL] Weather sudah selesai."
+            "[BAMBOO]",
+            Planted,
+            "/",
+            Needed,
+            "| Garden:",
+            CountBamboo(),
+            "/",
+            MAX_BAMBOO
         )
 
-        return false
+
+        task.wait(
+            ACTION_DELAY
+        )
 
     end
-
-
-    --------------------------------------------------
-    -- PLANT
-    --------------------------------------------------
-
-    local Before =
-        CountSpecialPlantInGarden(
-            SeedName
-        )
-
-
-    local Success =
-        PlantSeed(
-            SeedData
-        )
-
-
-    if not Success then
-
-        warn(
-            "[SPECIAL] Gagal plant:",
-            SeedName
-        )
-
-        return false
-
-    end
-
-
-    local After =
-        CountSpecialPlantInGarden(
-            SeedName
-        )
-
-
-    print(
-        "[SPECIAL] PLANTED:",
-        SeedName,
-        "|",
-        Before,
-        "->",
-        After,
-        "/",
-        SPECIAL_PLANT_MAX
-    )
 
 
     --------------------------------------------------
     -- WATER
     --------------------------------------------------
 
-    task.wait(
-        0.5
-    )
+    if Planted > 0 then
+
+        task.wait(
+            0.5
+        )
 
 
-    pcall(function()
+        pcall(function()
 
-        UseWateringCan()
+            UseWateringCan()
 
-    end)
-
-
-    task.wait(
-        SPRINKLER_CONFIG
-            .AFTER_WATER_DELAY
-    )
+        end)
 
 
-    return true
+        task.wait(
+            SPRINKLER_CONFIG
+                .AFTER_WATER_DELAY
+        )
+
+    end
+
+
+    UnequipTool()
+
+
+    return Planted > 0
+
+end
+
+
+--==================================================
+-- BAMBOO VALID SEED
+--==================================================
+
+local function GetBambooSeedData()
+
+    local Seeds =
+        GetSeedTools()
+
+
+    for _, SeedData in ipairs(
+        Seeds
+    ) do
+
+        if SeedData.SeedName ==
+            BAMBOO_NAME then
+
+            return SeedData
+
+        end
+
+    end
+
+
+    return nil
 
 end
 
@@ -3084,8 +3083,16 @@ local function ShovelPhase(
         ValidSeeds
     ) do
 
-        if NEVER_PLANT[
+        local SeedName =
             SeedData.SeedName
+
+
+        --------------------------------------------------
+        -- NEVER PLANT
+        --------------------------------------------------
+
+        if NEVER_PLANT[
+            SeedName
         ] then
 
             continue
@@ -3094,35 +3101,29 @@ local function ShovelPhase(
 
 
         --------------------------------------------------
-        -- SPECIAL:
-        -- HITUNG SEBAGAI KEBUTUHAN SLOT KHUSUS
+        -- BAMBOO
+        --
+        -- hanya hitung jika weather aktif
+        -- dan masih butuh bamboo
         --------------------------------------------------
 
-        if IsSpecialSeed(
-            SeedData.SeedName
-        ) then
+        if SeedName ==
+            BAMBOO_NAME then
 
-            local ActiveWeather =
-                GetActiveWeather()
+            local WeatherActive =
+                IsBambooWeatherActive()
 
-
-            if not ActiveWeather then
+            if not WeatherActive then
                 continue
             end
 
 
-            local GardenCount =
-                CountSpecialPlantInGarden(
-                    SeedData.SeedName
-                )
+            local BambooNeeded =
+                GetBambooNeeded()
 
-
-            local Remaining =
-                math.max(
-                    0,
-                    SPECIAL_PLANT_MAX
-                    - GardenCount
-                )
+            if BambooNeeded <= 0 then
+                continue
+            end
 
 
             local Count =
@@ -3134,15 +3135,12 @@ local function ShovelPhase(
                 ) or 0
 
 
-            if Count > 0 then
+            TotalSeedCount +=
+                math.min(
+                    Count,
+                    BambooNeeded
+                )
 
-                TotalSeedCount +=
-                    math.min(
-                        Count,
-                        Remaining
-                    )
-
-            end
 
             continue
 
@@ -3150,7 +3148,7 @@ local function ShovelPhase(
 
 
         --------------------------------------------------
-        -- NORMAL SEED
+        -- NORMAL
         --------------------------------------------------
 
         local Count =
@@ -3194,6 +3192,15 @@ local function ShovelPhase(
         )
 
 
+    if ShovelNeeded <= 0 then
+
+        UnequipTool()
+
+        return
+
+    end
+
+
     print("")
     print(
         "========== SHOVEL PHASE =========="
@@ -3231,21 +3238,34 @@ local function ShovelPhase(
     )
 
 
-    if ShovelNeeded <= 0 then
-
-        UnequipTool()
-
-        return
-
-    end
-
-
     local Shoveled = 0
 
 
     while Shoveled <
         ShovelNeeded do
 
+
+        --------------------------------------------------
+        -- WEATHER CHECK
+        -- jika target bamboo, berhenti bila weather mati
+        --------------------------------------------------
+
+        local BambooData =
+            GetBambooSeedData()
+
+
+        if BambooData
+            and IsBambooWeatherActive()
+            and GetBambooNeeded() > 0 then
+
+            -- Bamboo masih valid
+
+        end
+
+
+        --------------------------------------------------
+        -- FIND LOWEST
+        --------------------------------------------------
 
         local LowestPlant =
             FindLowestReplaceablePlant(
@@ -3400,10 +3420,42 @@ local function PlantPhase()
         Seeds
     ) do
 
-        if SeedData.RarityValue > 0
-            and not NEVER_PLANT[
-                SeedData.SeedName
-            ] then
+        local SeedName =
+            SeedData.SeedName
+
+
+        --------------------------------------------------
+        -- NEVER PLANT
+        --------------------------------------------------
+
+        if NEVER_PLANT[
+            SeedName
+        ] then
+
+            continue
+
+        end
+
+
+        --------------------------------------------------
+        -- BAMBOO SPECIAL
+        --------------------------------------------------
+
+        if SeedName ==
+            BAMBOO_NAME then
+
+            continue
+
+        end
+
+
+        --------------------------------------------------
+        -- NORMAL ONLY
+        --
+        -- Mythic / Super sudah masuk NEVER_PLANT
+        --------------------------------------------------
+
+        if SeedData.RarityValue > 0 then
 
             table.insert(
                 ValidSeeds,
@@ -3415,14 +3467,9 @@ local function PlantPhase()
     end
 
 
-    if #ValidSeeds == 0 then
-
-        UnequipTool()
-
-        return
-
-    end
-
+    --------------------------------------------------
+    -- NORMAL SEEDS
+    --------------------------------------------------
 
     SortSeeds(
         ValidSeeds
@@ -3432,147 +3479,9 @@ local function PlantPhase()
     UsedPositions = {}
 
 
-    --------------------------------------------------
-    -- SPECIAL PLANTS FIRST
-    --
-    -- BAMBOO / MUSHROOM
-    --
-    -- WEATHER WAJIB
-    -- MAX 100
-    -- TIDAK TERPENGARUH MAX PLANTS
-    --------------------------------------------------
-
     for _, SeedData in ipairs(
         ValidSeeds
     ) do
-
-        local SeedName =
-            SeedData.SeedName
-
-
-        if not SPECIAL_PLANTS[
-            SeedName
-        ] then
-
-            continue
-
-        end
-
-
-        while true do
-
-            --------------------------------------------------
-            -- WEATHER CHECK
-            --------------------------------------------------
-
-            local ActiveWeather =
-                GetActiveWeather()
-
-
-            if not ActiveWeather then
-
-                print(
-                    "[SPECIAL SKIP]",
-                    SeedName,
-                    "| Tidak ada weather."
-                )
-
-                break
-
-            end
-
-
-            --------------------------------------------------
-            -- SPECIAL COUNT
-            --------------------------------------------------
-
-            local GardenCount =
-                CountSpecialPlantInGarden(
-                    SeedName
-                )
-
-
-            if GardenCount >=
-                SPECIAL_PLANT_MAX then
-
-                print(
-                    "[SPECIAL MAX]",
-                    SeedName,
-                    "|",
-                    GardenCount,
-                    "/",
-                    SPECIAL_PLANT_MAX
-                )
-
-                break
-
-            end
-
-
-            --------------------------------------------------
-            -- BACKPACK
-            --------------------------------------------------
-
-            local CurrentCount =
-                tonumber(
-                    SeedData.Tool:
-                        GetAttribute(
-                            "Count"
-                        )
-                ) or 0
-
-
-            if CurrentCount <= 0 then
-
-                break
-
-            end
-
-
-            --------------------------------------------------
-            -- SPECIAL SEQUENCE
-            --------------------------------------------------
-
-            local Success =
-                SpecialPlantSequence(
-                    SeedData
-                )
-
-
-            if not Success then
-
-                break
-
-            end
-
-
-            task.wait(
-                ACTION_DELAY
-            )
-
-        end
-
-    end
-
-
-    --------------------------------------------------
-    -- NORMAL SEEDS
-    --
-    -- SPECIAL DI-SKIP
-    --------------------------------------------------
-
-    for _, SeedData in ipairs(
-        ValidSeeds
-    ) do
-
-        if SPECIAL_PLANTS[
-            SeedData.SeedName
-        ] then
-
-            continue
-
-        end
-
 
         while true do
 
@@ -3586,9 +3495,7 @@ local function PlantPhase()
 
 
             if CurrentCount <= 0 then
-
                 break
-
             end
 
 
@@ -3602,13 +3509,6 @@ local function PlantPhase()
 
             if CurrentPlants >=
                 MAX_PLANTS then
-
-                print(
-                    "🌱 Plant penuh:",
-                    CurrentPlants,
-                    "/",
-                    MAX_PLANTS
-                )
 
                 break
 
@@ -3667,10 +3567,261 @@ end
 
 
 --==================================================
+-- BAMBOO PHASE
+--==================================================
+
+local function BambooPhase()
+
+    --------------------------------------------------
+    -- WEATHER
+    --------------------------------------------------
+
+    local WeatherActive,
+        WeatherName =
+        IsBambooWeatherActive()
+
+
+    if not WeatherActive then
+
+        return
+
+    end
+
+
+    --------------------------------------------------
+    -- CURRENT BAMBOO
+    --------------------------------------------------
+
+    local CurrentBamboo =
+        CountBamboo()
+
+
+    if CurrentBamboo >=
+        MAX_BAMBOO then
+
+        return
+
+    end
+
+
+    --------------------------------------------------
+    -- BACKPACK
+    --------------------------------------------------
+
+    local BambooData =
+        GetBambooSeedData()
+
+
+    if not BambooData then
+        return
+    end
+
+
+    local SeedCount =
+        tonumber(
+            BambooData.Tool:
+                GetAttribute(
+                    "Count"
+                )
+        ) or 0
+
+
+    if SeedCount <= 0 then
+        return
+    end
+
+
+    local Needed =
+        math.min(
+            SeedCount,
+            MAX_BAMBOO
+                - CurrentBamboo
+        )
+
+
+    if Needed <= 0 then
+        return
+    end
+
+
+    print("")
+    print(
+        "========== BAMBOO WEATHER =========="
+    )
+
+    print(
+        "Weather:",
+        WeatherName
+    )
+
+    print(
+        "Garden:",
+        CurrentBamboo,
+        "/",
+        MAX_BAMBOO
+    )
+
+    print(
+        "Backpack:",
+        SeedCount
+    )
+
+    print(
+        "Target:",
+        Needed
+    )
+
+
+    --------------------------------------------------
+    -- SMART SHOVEL
+    --
+    -- Kalau slot kurang, replace plant yang
+    -- lebih rendah dari Bamboo (Rare)
+    --------------------------------------------------
+
+    local MAX_PLANTS =
+        GetMaxPlants()
+
+    local CurrentPlants =
+        CountPlants()
+
+    local FreeSlots =
+        math.max(
+            0,
+            MAX_PLANTS
+            - CurrentPlants
+        )
+
+
+    local NeedShovel =
+        math.max(
+            0,
+            Needed
+            - FreeSlots
+        )
+
+
+    if NeedShovel > 0 then
+
+        local BambooValidList = {
+
+            BambooData
+
+        }
+
+
+        print(
+            "[BAMBOO] Need Shovel:",
+            NeedShovel
+        )
+
+
+        for i = 1, NeedShovel do
+
+            local LowestPlant =
+                FindLowestReplaceablePlant(
+                    BambooValidList
+                )
+
+
+            if not LowestPlant then
+
+                warn(
+                    "[BAMBOO] Tidak ada plant rarity lebih rendah yang bisa diganti."
+                )
+
+                break
+
+            end
+
+
+            local Before =
+                CountPlants()
+
+
+            local Success =
+                ShovelPlant(
+                    LowestPlant
+                )
+
+
+            if not Success then
+                break
+            end
+
+
+            local Start =
+                os.clock()
+
+
+            while os.clock()
+                - Start < 2 do
+
+                if CountPlants()
+                    < Before then
+
+                    break
+
+                end
+
+                task.wait(
+                    0.05
+                )
+
+            end
+
+
+            if CountPlants()
+                >= Before then
+
+                break
+
+            end
+
+
+            task.wait(
+                ACTION_DELAY
+            )
+
+        end
+
+    end
+
+
+    --------------------------------------------------
+    -- PLANT
+    --------------------------------------------------
+
+    BambooPlantSequence(
+        BambooData
+    )
+
+
+end
+
+
+--==================================================
 -- SMART PLANT
 --==================================================
 
 local function SmartPlant()
+
+    --------------------------------------------------
+    -- BAMBOO SPECIAL
+    --
+    -- harus diproses saat weather aktif
+    --------------------------------------------------
+
+    pcall(function()
+
+        BambooPhase()
+
+    end)
+
+
+    --------------------------------------------------
+    -- NORMAL
+    --------------------------------------------------
 
     local Seeds =
         GetSeedTools()
@@ -3688,10 +3839,28 @@ local function SmartPlant()
         Seeds
     ) do
 
-        if SeedData.RarityValue > 0
-            and not NEVER_PLANT[
-                SeedData.SeedName
-            ] then
+        local SeedName =
+            SeedData.SeedName
+
+
+        if NEVER_PLANT[
+            SeedName
+        ] then
+
+            continue
+
+        end
+
+
+        if SeedName ==
+            BAMBOO_NAME then
+
+            continue
+
+        end
+
+
+        if SeedData.RarityValue > 0 then
 
             table.insert(
                 ValidSeeds,
@@ -3714,7 +3883,7 @@ local function SmartPlant()
 
 
     --------------------------------------------------
-    -- SHOVEL
+    -- SHOVEL NORMAL
     --------------------------------------------------
 
     ShovelPhase(
@@ -3728,7 +3897,7 @@ local function SmartPlant()
 
 
     --------------------------------------------------
-    -- PLANT
+    -- PLANT NORMAL
     --------------------------------------------------
 
     PlantPhase()
@@ -3757,13 +3926,7 @@ local function TryExpand()
 
 
     if Level <= 0 then
-
-        print(
-            "[AUTO EXPAND] Level belum siap."
-        )
-
         return
-
     end
 
 
@@ -3836,19 +3999,6 @@ local function TryExpand()
     end
 
 
-    print(
-        "Next Level :",
-        NextLevel
-    )
-
-    print(
-        "Required   :",
-        FormatNumber(
-            RequiredLeaves
-        )
-    )
-
-
     if Leaves <
         RequiredLeaves then
 
@@ -3908,10 +4058,6 @@ local function TryExpand()
     )
 
 
-    --------------------------------------------------
-    -- TUNGGU MAP UPDATE
-    --------------------------------------------------
-
     task.wait(
         2
     )
@@ -3957,7 +4103,7 @@ print(
 )
 
 print(
-    "          AUTO KAITUN"
+    "          AUTO KAITUN V13"
 )
 
 print(
@@ -4014,14 +4160,6 @@ print(
 )
 
 print(
-    "SPECIAL BAMBOO MAX: 100"
-)
-
-print(
-    "SPECIAL MUSHROOM MAX: 100"
-)
-
-print(
     "PLANT RADIUS:",
     RADIUS
 )
@@ -4055,15 +4193,35 @@ print(
 )
 
 print(
-    "BAMBOO: WEATHER REQUIRED / MAX 100"
+    "BAMBOO: WEATHER ONLY"
 )
 
 print(
-    "MUSHROOM: WEATHER REQUIRED / MAX 100"
+    "BAMBOO MAX: 100"
 )
 
 print(
-    "SPECIAL: SPRINKLER -> PLANT -> WATER"
+    "MUSHROOM: NEVER PLANT"
+)
+
+print(
+    "MYTHIC: NEVER PLANT"
+)
+
+print(
+    "SUPER: NEVER PLANT"
+)
+
+print(
+    "ATLANTIC GIANT PUMPKIN: NEVER PLANT"
+)
+
+print(
+    "SPECIAL: SPRINKLER -> BAMBOO -> WATER"
+)
+
+print(
+    "HARVEST: RARITY HIGH -> COMMON"
 )
 
 print(
@@ -4080,10 +4238,6 @@ print(
 
 print(
     "SUNFLOWER: MUTATION REQUIRED"
-)
-
-print(
-    "ATLANTIC GIANT PUMPKIN: NEVER PLANT"
 )
 
 print(
@@ -4184,6 +4338,7 @@ end)
 -- MAIN LOOP
 --
 -- BUY
+-- BAMBOO WEATHER
 -- SHOVEL
 -- PLANT
 --
