@@ -1,4 +1,3 @@
-
 -- AUTO KAITUN V12
 --==================================================
 -- START 60 DETIK SETELAH EXECUTE
@@ -16,8 +15,14 @@
 -- LEVEL 3 = 500
 --
 -- SPECIAL:
--- Maple Bamboo   -> tunggu 50 seed
--- Maple Mushroom -> tunggu 50 seed
+-- Maple Bamboo   -> WEATHER REQUIRED
+-- Maple Mushroom -> WEATHER REQUIRED
+--
+-- SPECIAL MAX:
+-- Maple Bamboo   -> 100
+-- Maple Mushroom -> 100
+--
+-- SPECIAL PLANTS TIDAK TERPENGARUH MAX PLANTS
 --
 -- PLANT ORDER SPECIAL:
 -- SPRINKLER -> PLANT -> WATERING
@@ -189,10 +194,18 @@ local UsedPositions = {}
 
 
 --==================================================
--- SPECIAL SEED REQUIREMENT
+-- SPECIAL PLANT CONFIG
 --==================================================
 
-local SPECIAL_SEED_MIN = 50
+local SPECIAL_PLANT_MAX = 100
+
+local SPECIAL_PLANTS = {
+
+    ["Maple Bamboo"] = true,
+
+    ["Maple Mushroom"] = true,
+
+}
 
 
 --==================================================
@@ -369,6 +382,9 @@ local SEED_RARITY = {
 
 --==================================================
 -- ONE TIME PLANTS
+--
+-- DIGUNAKAN UNTUK HARVEST LOGIC
+-- BUKAN LAGI UNTUK SYARAT 50 SEED
 --==================================================
 
 local ONE_TIME_PLANTS = {
@@ -670,6 +686,56 @@ end
 local function CountPlants()
 
     return #GetPlants()
+
+end
+
+
+--==================================================
+-- COUNT SPECIAL PLANT IN GARDEN
+--==================================================
+
+local function CountSpecialPlantInGarden(
+    SeedName
+)
+
+    local Count = 0
+
+    for _, Plant in ipairs(
+        GetPlants()
+    ) do
+
+        if Plant:GetAttribute(
+            "SeedName"
+        ) == SeedName then
+
+            Count += 1
+
+        end
+
+    end
+
+    return Count
+
+end
+
+
+--==================================================
+-- GET SPECIAL REMAINING
+--==================================================
+
+local function GetSpecialPlantRemaining(
+    SeedName
+)
+
+    local Current =
+        CountSpecialPlantInGarden(
+            SeedName
+        )
+
+    return math.max(
+        0,
+        SPECIAL_PLANT_MAX - Current
+    )
 
 end
 
@@ -2425,17 +2491,113 @@ end
 
 
 --==================================================
--- SPECIAL SEED CHECK
+-- WEATHER CHECK
+--
+-- SPECIAL PLANT WAJIB WEATHER
+--==================================================
+
+local function GetActiveWeather()
+
+    --------------------------------------------------
+    -- BLOODMOON
+    --------------------------------------------------
+
+    if workspace:FindFirstChild(
+        "ActiveBloodmoon"
+    ) then
+
+        return "Bloodmoon"
+
+    end
+
+
+    --------------------------------------------------
+    -- AURORA
+    --------------------------------------------------
+
+    if workspace:GetAttribute(
+        "AuroraEvent"
+    ) then
+
+        return "Aurora"
+
+    end
+
+
+    --------------------------------------------------
+    -- LIGHTNING
+    --------------------------------------------------
+
+    local WeatherEffects =
+        workspace:FindFirstChild(
+            "WeatherEffects"
+        )
+
+    if WeatherEffects
+        and WeatherEffects:FindFirstChild(
+            "LightningStrike"
+        ) then
+
+        return "Lightning"
+
+    end
+
+
+    --------------------------------------------------
+    -- BLIZZARD / SNOWFALL
+    --------------------------------------------------
+
+    if workspace:FindFirstChild(
+        "ActiveBlizzard"
+    ) then
+
+        return "Snowfall (Blizzard)"
+
+    end
+
+
+    --------------------------------------------------
+    -- STARFALL
+    --------------------------------------------------
+
+    if workspace:GetAttribute(
+        "ShootingStarEvent"
+    ) then
+
+        return "Starfall"
+
+    end
+
+
+    --------------------------------------------------
+    -- SUNBURST
+    --------------------------------------------------
+
+    if workspace:GetAttribute(
+        "SunburstEvent"
+    ) then
+
+        return "Sunburst"
+
+    end
+
+
+    return nil
+
+end
+
+
+--==================================================
+-- IS SPECIAL SEED
 --==================================================
 
 local function IsSpecialSeed(
     SeedName
 )
 
-    return SeedName ==
-        "Maple Bamboo"
-        or SeedName ==
-        "Maple Mushroom"
+    return SPECIAL_PLANTS[
+        SeedName
+    ] == true
 
 end
 
@@ -2471,14 +2633,56 @@ local function CanPlantSeed(
 
 
     --------------------------------------------------
-    -- SPECIAL 50 SEEDS
+    -- SPECIAL:
+    -- BAMBOO / MUSHROOM
+    --
+    -- WEATHER WAJIB
+    -- TIDAK ADA SYARAT 50 SEED
+    -- MAX 100 PER JENIS
     --------------------------------------------------
 
-    if IsSpecialSeed(
+    if SPECIAL_PLANTS[
         SeedName
-    ) then
+    ] then
 
-        local Count =
+        local ActiveWeather =
+            GetActiveWeather()
+
+
+        --------------------------------------------------
+        -- TANPA WEATHER = STOP
+        --------------------------------------------------
+
+        if not ActiveWeather then
+
+            return false
+
+        end
+
+
+        --------------------------------------------------
+        -- CHECK SPECIAL COUNT
+        --------------------------------------------------
+
+        local GardenCount =
+            CountSpecialPlantInGarden(
+                SeedName
+            )
+
+
+        if GardenCount >=
+            SPECIAL_PLANT_MAX then
+
+            return false
+
+        end
+
+
+        --------------------------------------------------
+        -- CHECK BACKPACK
+        --------------------------------------------------
+
+        local BackpackCount =
             tonumber(
                 SeedData.Tool:
                     GetAttribute(
@@ -2486,15 +2690,22 @@ local function CanPlantSeed(
                     )
             ) or 0
 
-        if Count <
-            SPECIAL_SEED_MIN then
+
+        if BackpackCount <= 0 then
 
             return false
 
         end
 
+
+        return true
+
     end
 
+
+    --------------------------------------------------
+    -- NORMAL SEED
+    --------------------------------------------------
 
     return true
 
@@ -2648,6 +2859,52 @@ local function SpecialPlantSequence(
     end
 
 
+    --------------------------------------------------
+    -- WEATHER WAJIB
+    --------------------------------------------------
+
+    local ActiveWeather =
+        GetActiveWeather()
+
+
+    if not ActiveWeather then
+
+        return false
+
+    end
+
+
+    --------------------------------------------------
+    -- CHECK GARDEN COUNT
+    --------------------------------------------------
+
+    local GardenCount =
+        CountSpecialPlantInGarden(
+            SeedName
+        )
+
+
+    if GardenCount >=
+        SPECIAL_PLANT_MAX then
+
+        print(
+            "[SPECIAL MAX]",
+            SeedName,
+            "|",
+            GardenCount,
+            "/",
+            SPECIAL_PLANT_MAX
+        )
+
+        return false
+
+    end
+
+
+    --------------------------------------------------
+    -- CHECK BACKPACK
+    --------------------------------------------------
+
     local Count =
         tonumber(
             SeedData.Tool:
@@ -2657,17 +2914,7 @@ local function SpecialPlantSequence(
         ) or 0
 
 
-    if Count <
-        SPECIAL_SEED_MIN then
-
-        print(
-            "[SPECIAL SKIP]",
-            SeedName,
-            "| Seed:",
-            Count,
-            "/",
-            SPECIAL_SEED_MIN
-        )
+    if Count <= 0 then
 
         return false
 
@@ -2685,7 +2932,19 @@ local function SpecialPlantSequence(
     )
 
     print(
-        "Seed:",
+        "Weather:",
+        ActiveWeather
+    )
+
+    print(
+        "Garden:",
+        GardenCount,
+        "/",
+        SPECIAL_PLANT_MAX
+    )
+
+    print(
+        "Backpack:",
         Count
     )
 
@@ -2716,11 +2975,32 @@ local function SpecialPlantSequence(
 
 
     --------------------------------------------------
+    -- WEATHER MASIH HARUS AKTIF
+    --------------------------------------------------
+
+    ActiveWeather =
+        GetActiveWeather()
+
+
+    if not ActiveWeather then
+
+        print(
+            "[SPECIAL] Weather sudah selesai."
+        )
+
+        return false
+
+    end
+
+
+    --------------------------------------------------
     -- PLANT
     --------------------------------------------------
 
     local Before =
-        CountPlants()
+        CountSpecialPlantInGarden(
+            SeedName
+        )
 
 
     local Success =
@@ -2741,13 +3021,21 @@ local function SpecialPlantSequence(
     end
 
 
+    local After =
+        CountSpecialPlantInGarden(
+            SeedName
+        )
+
+
     print(
         "[SPECIAL] PLANTED:",
         SeedName,
         "|",
         Before,
         "->",
-        CountPlants()
+        After,
+        "/",
+        SPECIAL_PLANT_MAX
     )
 
 
@@ -2805,9 +3093,37 @@ local function ShovelPhase(
         end
 
 
+        --------------------------------------------------
+        -- SPECIAL:
+        -- HITUNG SEBAGAI KEBUTUHAN SLOT KHUSUS
+        --------------------------------------------------
+
         if IsSpecialSeed(
             SeedData.SeedName
         ) then
+
+            local ActiveWeather =
+                GetActiveWeather()
+
+
+            if not ActiveWeather then
+                continue
+            end
+
+
+            local GardenCount =
+                CountSpecialPlantInGarden(
+                    SeedData.SeedName
+                )
+
+
+            local Remaining =
+                math.max(
+                    0,
+                    SPECIAL_PLANT_MAX
+                    - GardenCount
+                )
+
 
             local Count =
                 tonumber(
@@ -2817,15 +3133,25 @@ local function ShovelPhase(
                         )
                 ) or 0
 
-            if Count <
-                SPECIAL_SEED_MIN then
 
-                continue
+            if Count > 0 then
+
+                TotalSeedCount +=
+                    math.min(
+                        Count,
+                        Remaining
+                    )
 
             end
 
+            continue
+
         end
 
+
+        --------------------------------------------------
+        -- NORMAL SEED
+        --------------------------------------------------
 
         local Count =
             tonumber(
@@ -3107,18 +3433,87 @@ local function PlantPhase()
 
 
     --------------------------------------------------
-    -- SPECIAL SEEDS FIRST
+    -- SPECIAL PLANTS FIRST
+    --
+    -- BAMBOO / MUSHROOM
+    --
+    -- WEATHER WAJIB
+    -- MAX 100
+    -- TIDAK TERPENGARUH MAX PLANTS
     --------------------------------------------------
 
     for _, SeedData in ipairs(
         ValidSeeds
     ) do
 
-        if IsSpecialSeed(
+        local SeedName =
             SeedData.SeedName
-        ) then
 
-            local Count =
+
+        if not SPECIAL_PLANTS[
+            SeedName
+        ] then
+
+            continue
+
+        end
+
+
+        while true do
+
+            --------------------------------------------------
+            -- WEATHER CHECK
+            --------------------------------------------------
+
+            local ActiveWeather =
+                GetActiveWeather()
+
+
+            if not ActiveWeather then
+
+                print(
+                    "[SPECIAL SKIP]",
+                    SeedName,
+                    "| Tidak ada weather."
+                )
+
+                break
+
+            end
+
+
+            --------------------------------------------------
+            -- SPECIAL COUNT
+            --------------------------------------------------
+
+            local GardenCount =
+                CountSpecialPlantInGarden(
+                    SeedName
+                )
+
+
+            if GardenCount >=
+                SPECIAL_PLANT_MAX then
+
+                print(
+                    "[SPECIAL MAX]",
+                    SeedName,
+                    "|",
+                    GardenCount,
+                    "/",
+                    SPECIAL_PLANT_MAX
+                )
+
+                break
+
+            end
+
+
+            --------------------------------------------------
+            -- BACKPACK
+            --------------------------------------------------
+
+            local CurrentCount =
                 tonumber(
                     SeedData.Tool:
                         GetAttribute(
@@ -3127,26 +3522,33 @@ local function PlantPhase()
                 ) or 0
 
 
-            if Count >=
-                SPECIAL_SEED_MIN then
+            if CurrentCount <= 0 then
 
-                local MAX_PLANTS =
-                    GetMaxPlants()
-
-                local CurrentPlants =
-                    CountPlants()
-
-
-                if CurrentPlants <
-                    MAX_PLANTS then
-
-                    SpecialPlantSequence(
-                        SeedData
-                    )
-
-                end
+                break
 
             end
+
+
+            --------------------------------------------------
+            -- SPECIAL SEQUENCE
+            --------------------------------------------------
+
+            local Success =
+                SpecialPlantSequence(
+                    SeedData
+                )
+
+
+            if not Success then
+
+                break
+
+            end
+
+
+            task.wait(
+                ACTION_DELAY
+            )
 
         end
 
@@ -3155,15 +3557,17 @@ local function PlantPhase()
 
     --------------------------------------------------
     -- NORMAL SEEDS
+    --
+    -- SPECIAL DI-SKIP
     --------------------------------------------------
 
     for _, SeedData in ipairs(
         ValidSeeds
     ) do
 
-        if IsSpecialSeed(
+        if SPECIAL_PLANTS[
             SeedData.SeedName
-        ) then
+        ] then
 
             continue
 
@@ -3182,7 +3586,9 @@ local function PlantPhase()
 
 
             if CurrentCount <= 0 then
+
                 break
+
             end
 
 
@@ -3608,6 +4014,14 @@ print(
 )
 
 print(
+    "SPECIAL BAMBOO MAX: 100"
+)
+
+print(
+    "SPECIAL MUSHROOM MAX: 100"
+)
+
+print(
     "PLANT RADIUS:",
     RADIUS
 )
@@ -3641,11 +4055,11 @@ print(
 )
 
 print(
-    "BAMBOO: WAIT 50 SEEDS"
+    "BAMBOO: WEATHER REQUIRED / MAX 100"
 )
 
 print(
-    "MUSHROOM: WAIT 50 SEEDS"
+    "MUSHROOM: WEATHER REQUIRED / MAX 100"
 )
 
 print(
