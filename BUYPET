@@ -1,128 +1,193 @@
---==================================================
--- AUTO BUY PET
---==================================================
-
+--BUY PET ONLY SIZE OR MUTATION
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 
-local CHECK_DELAY = 2
-local TWEEN_SPEED = 16
+local Networking = require(
+    ReplicatedStorage
+        :WaitForChild("SharedModules")
+        :WaitForChild("Networking")
+)
 
---==================================================
--- TARGET PET + HARGA
---==================================================
+local WildPetTame = Networking.Pets.WildPetTame
 
-local TARGET_PETS = {
-    ["FFox"] = 10000000,
-    ["WWolf"] = 6000000,
-    ["Shadow Dragon"] = 30000000,
-    ["SSwan"] = 3000000,
-}
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
 
---==================================================
--- PATH
---==================================================
+local TWEEN_SPEED = 30
+local BUY_DELAY = 0.1
 
-local WildPetSpawns = workspace
-    :WaitForChild("Map")
-    :WaitForChild("WildPetSpawns")
+--------------------------------------------------
+-- TWEEN KE PET
+--------------------------------------------------
 
---==================================================
--- GET LEAVES
---==================================================
-
-local function GetLeaves()
-    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    if not leaderstats then
-        return 0
+local function TweenToPet(pet)
+    local character = LocalPlayer.Character
+    if not character then
+        return false
     end
 
-    local leaves = leaderstats:FindFirstChild("Leaves")
-    if not leaves then
-        return 0
+    local root = character:FindFirstChild("HumanoidRootPart")
+    if not root then
+        return false
     end
 
-    return leaves.Value
+    if not pet or not pet.Parent then
+        return false
+    end
+
+    local targetPosition = pet.Position + Vector3.new(0, 3, 0)
+    local distance = (root.Position - targetPosition).Magnitude
+
+    if distance < 3 then
+        return true
+    end
+
+    local duration = distance / TWEEN_SPEED
+
+    local tween = TweenService:Create(
+        root,
+        TweenInfo.new(
+            duration,
+            Enum.EasingStyle.Linear,
+            Enum.EasingDirection.Out
+        ),
+        {
+            CFrame = CFrame.new(targetPosition)
+        }
+    )
+
+    tween:Play()
+    tween.Completed:Wait()
+
+    return true
 end
 
---==================================================
--- GET ROOT
---==================================================
+--------------------------------------------------
+-- CEK PET
+--------------------------------------------------
 
-local function GetRoot()
-    local Character = LocalPlayer.Character
-        or LocalPlayer.CharacterAdded:Wait()
+local function HasTargetAttribute(pet)
+    -- PetSize ADA
+    if pet:GetAttribute("PetSize") ~= nil then
+        return true
+    end
 
-    return Character:WaitForChild("HumanoidRootPart")
+    -- ATAU PetType ADA
+    if pet:GetAttribute("PetType") ~= nil then
+        return true
+    end
+
+    return false
 end
 
---==================================================
--- AUTO BUY
---==================================================
+--------------------------------------------------
+-- BUY PET
+--------------------------------------------------
 
-while task.wait(CHECK_DELAY) do
+local function BuyPet(pet)
+    if not pet or not pet.Parent then
+        return
+    end
 
-    local currentLeaves = GetLeaves()
+    if not pet:IsA("BasePart") then
+        return
+    end
 
-    for _, pet in ipairs(WildPetSpawns:GetChildren()) do
+    --------------------------------------------------
+    -- HARUS PUNYA PetSize ATAU PetType
+    --------------------------------------------------
 
-        local petName = pet:GetAttribute("PetName")
-        local petPrice = petName and TARGET_PETS[petName]
+    if not HasTargetAttribute(pet) then
+        return
+    end
 
-        if petPrice and currentLeaves >= petPrice then
+    local petName = pet:GetAttribute("PetName")
+    local petSize = pet:GetAttribute("PetSize")
+    local petType = pet:GetAttribute("PetType")
+    local rarity = pet:GetAttribute("Rarity")
+    local price = pet:GetAttribute("Price")
 
-            local root = pet:FindFirstChild("RootPart")
+    print(
+        "[TARGET PET]",
+        petName or pet.Name,
+        "| PetSize:", petSize,
+        "| PetType:", petType,
+        "| Rarity:", rarity,
+        "| Price:", price
+    )
 
-            if root then
-                local prompt = root:FindFirstChild("BuyPrompt")
+    --------------------------------------------------
+    -- TWEEN
+    --------------------------------------------------
 
-                if prompt and prompt:IsA("ProximityPrompt") then
+    if not TweenToPet(pet) then
+        return
+    end
 
-                    local hrp = GetRoot()
+    if not pet.Parent then
+        return
+    end
 
-                    local distance =
-                        (hrp.Position - root.Position).Magnitude
+    --------------------------------------------------
+    -- BUY
+    --------------------------------------------------
 
-                    local duration = distance / TWEEN_SPEED
+    print("[BUYING]", petName or pet.Name)
 
-                    local tween = TweenService:Create(
-                        hrp,
-                        TweenInfo.new(
-                            duration,
-                            Enum.EasingStyle.Linear,
-                            Enum.EasingDirection.Out
-                        ),
-                        {
-                            CFrame = root.CFrame
-                        }
-                    )
+    pcall(function()
+        WildPetTame:Fire(pet)
+    end)
 
-                    tween:Play()
-                    tween.Completed:Wait()
+    task.wait(BUY_DELAY)
+end
 
-                    task.wait(0.3)
+--------------------------------------------------
+-- SCAN SEMUA PET
+--------------------------------------------------
 
-                    pcall(function()
-                        fireproximityprompt(prompt)
-                    end)
+local function ScanPets()
+    local Map = workspace:FindFirstChild("Map")
+    if not Map then
+        return
+    end
 
-                    print(
-                        "[AUTO BUY] "
-                        .. petName
-                        .. " | Price="
-                        .. tostring(petPrice)
-                        .. " | Leaves="
-                        .. tostring(GetLeaves())
-                    )
+    local WildPetRef = Map:FindFirstChild("WildPetRef")
+    if not WildPetRef then
+        return
+    end
 
-                    task.wait(0.5)
-
-                    -- Update Leaves setelah pembelian
-                    currentLeaves = GetLeaves()
-                end
-            end
+    for _, pet in ipairs(WildPetRef:GetChildren()) do
+        if pet:IsA("BasePart") then
+            BuyPet(pet)
         end
     end
 end
+
+--------------------------------------------------
+-- INITIAL SCAN
+--------------------------------------------------
+
+task.spawn(function()
+    ScanPets()
+end)
+
+--------------------------------------------------
+-- PET BARU SPAWN
+--------------------------------------------------
+
+task.spawn(function()
+    local Map = workspace:WaitForChild("Map")
+    local WildPetRef = Map:WaitForChild("WildPetRef")
+
+    WildPetRef.ChildAdded:Connect(function(pet)
+        task.wait(0.1)
+
+        if pet:IsA("BasePart") then
+            BuyPet(pet)
+        end
+    end)
+end)
