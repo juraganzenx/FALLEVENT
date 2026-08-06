@@ -4200,11 +4200,11 @@ print(
 )
 
 print(
-    "LEVEL 2 MAX PLANTS: 300"
+    "LEVEL 2 MAX PLANTS: 200"
 )
 
 print(
-    "LEVEL 3 MAX PLANTS: 500"
+    "LEVEL 3 MAX PLANTS: 200"
 )
 
 print(
