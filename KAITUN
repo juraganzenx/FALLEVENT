@@ -522,7 +522,6 @@ local MUTATION_REQUIRED_FRUITS = {
 
 local NEVER_PLANT = {
     ["Atlantic Giant Pumpkin"] = true,
-    ["Maple Bamboo"] = true,
 
     -- Common
     ["Maple Carrot"] = true,
