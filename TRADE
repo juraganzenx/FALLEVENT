@@ -127,10 +127,6 @@ local NORMAL_ITEMS = {
 		ItemKey = "Rainbow"
 	},
 
-	{
-		Category = "Seeds",
-		ItemKey = "Maple Mushroom"
-	},
 
 	--------------------------------------------------
 	-- GEAR
