@@ -10,6 +10,7 @@ local function Execute(url)
     end)
 end
 
+Execute("https://raw.githubusercontent.com/juraganzenx/FALLEVENT/refs/heads/main/CLAIMMAILBOX")
 Execute("https://raw.githubusercontent.com/juraganzenx/FALLEVENT/refs/heads/main/DESTROYPLOT")
 Execute("https://raw.githubusercontent.com/juraganzenx/FALLEVENT/refs/heads/main/KAITUN")
 Execute("https://raw.githubusercontent.com/juraganzenx/FALLEVENT/refs/heads/main/TOFALLHARVEST")
