@@ -1406,14 +1406,6 @@ local function HarvestSpecialPlant(
 
     end
 
-    local Mutation =
-        Plant:GetAttribute(
-            "Mutation"
-        )
-
-    if not Mutation then
-        return false
-    end
 
     return FireHarvestPrompt(
         Plant
