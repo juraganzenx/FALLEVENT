@@ -1453,21 +1453,66 @@ local function HarvestSpecialPlant(
 
     end
 
-    local Mutation =
-        Plant:GetAttribute(
-            "Mutation"
+
+    --------------------------------------------------
+    -- MAPLE MUSHROOM
+    --
+    -- TIDAK WAJIB MUTATION
+    --------------------------------------------------
+
+    if SeedName ==
+        "Maple Mushroom" then
+
+        print(
+            "[SPECIAL HARVEST]",
+            "Maple Mushroom"
         )
 
-    if not Mutation then
-        return false
+        return FireHarvestPrompt(
+            Plant
+        )
+
     end
+
+
+    --------------------------------------------------
+    -- MAPLE BAMBOO
+    --
+    -- WAJIB MUTATION
+    --------------------------------------------------
+
+    if SeedName ==
+        "Maple Bamboo" then
+
+        local Mutation =
+            Plant:GetAttribute(
+                "Mutation"
+            )
+
+        if not Mutation then
+
+            print(
+                "[SPECIAL SKIP]",
+                "Maple Bamboo",
+                "| Tidak ada Mutation"
+            )
+
+            return false
+
+        end
+
+    end
+
+
+    --------------------------------------------------
+    -- HARVEST
+    --------------------------------------------------
 
     return FireHarvestPrompt(
         Plant
     )
 
 end
-
 
 --==================================================
 -- HARVEST PLANT
