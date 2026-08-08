@@ -60,16 +60,77 @@ local SEND_HOURS = {
 --------------------------------------------------
 
 local TARGET_PETS = {
+    -- Fox
     ["Fox"] = true,
-    ["Wolf"] = true,
-    ["Shadow Dragon"] = true,
-    ["ShadowDragon"] = true,
-    ["Swan"] = true,
+    ["Big Fox"] = true,
+    ["Mega Fox"] = true,
+    ["Rainbow Fox"] = true,
+    ["Big Rainbow Fox"] = true,
+    ["Mega Rainbow Fox"] = true,
 
+    -- Wolf
+    ["Wolf"] = true,
+    ["Big Wolf"] = true,
+    ["Mega Wolf"] = true,
+    ["Rainbow Wolf"] = true,
+    ["Big Rainbow Wolf"] = true,
+    ["Mega Rainbow Wolf"] = true,
+
+    -- Shadow Dragon
+    ["Shadow Dragon"] = true,
+    ["Big Shadow Dragon"] = true,
+    ["Mega Shadow Dragon"] = true,
+    ["Rainbow Shadow Dragon"] = true,
+    ["Big Rainbow Shadow Dragon"] = true,
+    ["Mega Rainbow Shadow Dragon"] = true,
+
+    -- ShadowDragon
+    ["ShadowDragon"] = true,
+    ["Big ShadowDragon"] = true,
+    ["Mega ShadowDragon"] = true,
+    ["Rainbow ShadowDragon"] = true,
+    ["Big Rainbow ShadowDragon"] = true,
+    ["Mega Rainbow ShadowDragon"] = true,
+
+    -- Swan
+    ["Swan"] = true,
+    ["Big Swan"] = true,
+    ["Mega Swan"] = true,
+    ["Rainbow Swan"] = true,
+    ["Big Rainbow Swan"] = true,
+    ["Mega Rainbow Swan"] = true,
+
+    -- Dog
     ["Dog"] = true,
+    ["Big Dog"] = true,
+    ["Mega Dog"] = true,
+    ["Rainbow Dog"] = true,
+    ["Big Rainbow Dog"] = true,
+    ["Mega Rainbow Dog"] = true,
+
+    -- Hedgehog
     ["Hedgehog"] = true,
+    ["Big Hedgehog"] = true,
+    ["Mega Hedgehog"] = true,
+    ["Rainbow Hedgehog"] = true,
+    ["Big Rainbow Hedgehog"] = true,
+    ["Mega Rainbow Hedgehog"] = true,
+
+    -- Turkey
     ["Turkey"] = true,
-    ["Squirrel"] = true
+    ["Big Turkey"] = true,
+    ["Mega Turkey"] = true,
+    ["Rainbow Turkey"] = true,
+    ["Big Rainbow Turkey"] = true,
+    ["Mega Rainbow Turkey"] = true,
+
+    -- Squirrel
+    ["Squirrel"] = true,
+    ["Big Squirrel"] = true,
+    ["Mega Squirrel"] = true,
+    ["Rainbow Squirrel"] = true,
+    ["Big Rainbow Squirrel"] = true,
+    ["Mega Rainbow Squirrel"] = true
 }
 
 --------------------------------------------------
