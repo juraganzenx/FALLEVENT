@@ -3257,15 +3257,259 @@ end
 -- SHOVEL PHASE
 --==================================================
 
+--==================================================
+-- SHOVEL PHASE
+--==================================================
+
 local function ShovelPhase(
     ValidSeeds
 )
 
+    local Plot =
+        GetMyPlot()
+
+    if not Plot then
+        return
+    end
+
+    local Level =
+        GetPlotLevel(
+            Plot
+        )
+
     local CurrentPlants =
         CountPlants()
 
-    local TotalSeedCount = 0
+    local MAX_PLANTS =
+        GetMaxPlants()
 
+    --------------------------------------------------
+    -- LEVEL 3
+    --
+    -- SETIAP SMARTPLANT:
+    -- SHOVEL SEMUA COMMON + UNCOMMON
+    --
+    -- Common   = 1
+    -- Uncommon = 2
+    --
+    -- Rarity 3+ TIDAK DISENTUH
+    --------------------------------------------------
+
+    if Level >= 3 then
+
+        print("")
+        print(
+            "========== LEVEL 3 SHOVEL =========="
+        )
+
+        print(
+            "Level 3 terdeteksi."
+        )
+
+        print(
+            "Target: SEMUA Common + Uncommon"
+        )
+
+        print(
+            "Plants:",
+            CurrentPlants,
+            "/",
+            MAX_PLANTS
+        )
+
+        local Shoveled = 0
+
+        --------------------------------------------------
+        -- COPY PLANT LIST
+        --
+        -- Supaya aman ketika object dihapus
+        -- saat proses shovel.
+        --------------------------------------------------
+
+        local PlantList = {}
+
+        for _, Plant in ipairs(
+            GetPlants()
+        ) do
+
+            table.insert(
+                PlantList,
+                Plant
+            )
+
+        end
+
+        --------------------------------------------------
+        -- SHOVEL COMMON + UNCOMMON
+        --------------------------------------------------
+
+        for _, Plant in ipairs(
+            PlantList
+        ) do
+
+            if not Plant
+                or not Plant.Parent then
+
+                continue
+
+            end
+
+            local SeedName =
+                Plant:GetAttribute(
+                    "SeedName"
+                )
+
+            if not SeedName then
+                continue
+            end
+
+            local _,
+                RarityValue =
+                GetRarityFromSeedName(
+                    SeedName
+                )
+
+            --------------------------------------------------
+            -- COMMON
+            --------------------------------------------------
+
+            local IsCommon =
+                RarityValue == 1
+
+            --------------------------------------------------
+            -- UNCOMMON
+            --------------------------------------------------
+
+            local IsUncommon =
+                RarityValue == 2
+
+            --------------------------------------------------
+            -- HANYA COMMON + UNCOMMON
+            --------------------------------------------------
+
+            if not IsCommon
+                and not IsUncommon then
+
+                continue
+
+            end
+
+            local BeforeCount =
+                CountPlants()
+
+            print(
+                "🔨 Level 3 Shovel:",
+                SeedName,
+                "|",
+                IsCommon
+                    and "Common"
+                    or "Uncommon"
+            )
+
+            local Success =
+                ShovelPlant(
+                    Plant
+                )
+
+            if not Success then
+
+                warn(
+                    "❌ Gagal shovel:",
+                    SeedName
+                )
+
+                continue
+
+            end
+
+            --------------------------------------------------
+            -- TUNGGU PLANT BENAR-BENAR HILANG
+            --------------------------------------------------
+
+            local Start =
+                os.clock()
+
+            while os.clock()
+                - Start < 2 do
+
+                if CountPlants()
+                    < BeforeCount then
+
+                    break
+
+                end
+
+                task.wait(
+                    0.05
+                )
+
+            end
+
+            --------------------------------------------------
+            -- VERIFY
+            --------------------------------------------------
+
+            local AfterCount =
+                CountPlants()
+
+            if AfterCount <
+                BeforeCount then
+
+                Shoveled += 1
+
+                print(
+                    "✅ Shoveled:",
+                    SeedName,
+                    "| Total:",
+                    Shoveled,
+                    "| Plants:",
+                    AfterCount,
+                    "/",
+                    MAX_PLANTS
+                )
+
+            else
+
+                warn(
+                    "⚠️ Plant tidak berkurang:",
+                    SeedName
+                )
+
+            end
+
+            task.wait(
+                ACTION_DELAY
+            )
+
+        end
+
+        UnequipTool()
+
+        task.wait(
+            0.15
+        )
+
+        print(
+            "🔨 LEVEL 3 SHOVEL SELESAI:",
+            Shoveled,
+            "plant"
+        )
+
+        print(
+            "===================================="
+        )
+
+        return
+
+    end
+
+    --------------------------------------------------
+    -- LEVEL 1 / 2
+    --
+    -- LOGIC LAMA
+    --------------------------------------------------
+
+    local TotalSeedCount = 0
 
     for _, SeedData in ipairs(
         ValidSeeds
@@ -3279,9 +3523,8 @@ local function ShovelPhase(
 
         end
 
-
         --------------------------------------------------
-        -- SPECIAL ONLY WHEN WEATHER
+        -- SPECIAL ONLY DURING WEATHER
         --------------------------------------------------
 
         if IsSpecialSeed(
@@ -3294,7 +3537,6 @@ local function ShovelPhase(
 
         end
 
-
         local Count =
             tonumber(
                 SeedData.Tool:
@@ -3303,10 +3545,9 @@ local function ShovelPhase(
                     )
             ) or 0
 
-
         --------------------------------------------------
         -- SPECIAL:
-        -- HANYA HITUNG YANG BENAR-BENAR DIBUTUHKAN
+        -- HANYA HITUNG YANG DIBUTUHKAN
         --------------------------------------------------
 
         if IsSpecialSeed(
@@ -3333,22 +3574,22 @@ local function ShovelPhase(
 
         end
 
-
         if Count > 0 then
-            TotalSeedCount += Count
+
+            TotalSeedCount +=
+                Count
+
         end
 
     end
 
-
     if TotalSeedCount <= 0 then
+
+        UnequipTool()
+
         return
+
     end
-
-
-    local MAX_PLANTS =
-        GetMaxPlants()
-
 
     local FreeSlots =
         math.max(
@@ -3357,14 +3598,12 @@ local function ShovelPhase(
             - CurrentPlants
         )
 
-
     local ShovelNeeded =
         math.max(
             0,
             TotalSeedCount
             - FreeSlots
         )
-
 
     print("")
     print(
@@ -3373,16 +3612,12 @@ local function ShovelPhase(
 
     print(
         "Plot:",
-        GetMyPlot()
-            and GetMyPlot().Name
-            or "NIL"
+        Plot.Name
     )
 
     print(
         "Plot Level:",
-        GetPlotLevel(
-            GetMyPlot()
-        )
+        Level
     )
 
     print(
@@ -3407,7 +3642,6 @@ local function ShovelPhase(
         ShovelNeeded
     )
 
-
     if ShovelNeeded <= 0 then
 
         UnequipTool()
@@ -3416,16 +3650,13 @@ local function ShovelPhase(
 
     end
 
-
     local Shoveled = 0
-
 
     while Shoveled <
         ShovelNeeded do
 
-
         --------------------------------------------------
-        -- WEATHER BISA BERAKHIR
+        -- WEATHER
         --------------------------------------------------
 
         if not IsWeatherActive() then
@@ -3441,12 +3672,12 @@ local function ShovelPhase(
                 ) then
 
                     HasSpecial = true
+
                     break
 
                 end
 
             end
-
 
             if HasSpecial then
 
@@ -3460,12 +3691,14 @@ local function ShovelPhase(
 
         end
 
+        --------------------------------------------------
+        -- FIND LOWEST REPLACEABLE
+        --------------------------------------------------
 
         local LowestPlant =
             FindLowestReplaceablePlant(
                 ValidSeeds
             )
-
 
         if not LowestPlant then
 
@@ -3477,22 +3710,22 @@ local function ShovelPhase(
 
         end
 
-
         local PlantName =
             LowestPlant:GetAttribute(
                 "SeedName"
             )
 
-
         local BeforeCount =
             CountPlants()
 
+        --------------------------------------------------
+        -- SHOVEL
+        --------------------------------------------------
 
         local Success =
             ShovelPlant(
                 LowestPlant
             )
-
 
         if not Success then
 
@@ -3505,10 +3738,12 @@ local function ShovelPhase(
 
         end
 
+        --------------------------------------------------
+        -- WAIT
+        --------------------------------------------------
 
         local Start =
             os.clock()
-
 
         while os.clock()
             - Start < 2 do
@@ -3526,10 +3761,12 @@ local function ShovelPhase(
 
         end
 
+        --------------------------------------------------
+        -- VERIFY
+        --------------------------------------------------
 
         local AfterCount =
             CountPlants()
-
 
         if AfterCount <
             BeforeCount then
@@ -3560,20 +3797,17 @@ local function ShovelPhase(
 
         end
 
-
         task.wait(
             ACTION_DELAY
         )
 
     end
 
-
     UnequipTool()
 
     task.wait(
         0.15
     )
-
 
     print(
         "🔨 SHOVEL PHASE SELESAI"
