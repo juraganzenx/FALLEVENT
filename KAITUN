@@ -1,16 +1,48 @@
+-- AUTO KAITUN V14
 --==================================================
--- AUTO KAITUN V15
+-- START 60 DETIK SETELAH EXECUTE
+--
+-- AUTO BUY
+-- AUTO HARVEST
+-- AUTO SELL ALL
+-- SMART SHOVEL
+-- AUTO PLANT
+-- AUTO EXPAND GARDEN
+--
+-- MAX PLANTS:
+-- LEVEL 1 = 200
+-- LEVEL 2 = 300
+-- LEVEL 3 = 500
+--
+-- SPECIAL:
+-- Maple Bamboo   -> ONLY DURING WEATHER
+-- Maple Mushroom -> ONLY DURING WEATHER
+--
+-- SPECIAL MAX:
+-- Maple Bamboo   = 100 PLANTS
+-- Maple Mushroom = 100 PLANTS
+--
+-- PLANT ORDER SPECIAL:
+-- SPRINKLER -> PLANT -> WATERING
+--
+-- MUTATION REQUIRED:
+-- Maple Acorn
+-- Maple Cherry
+-- Maple Dragon Fruit
+-- Maple Sunflower
+--
+-- NEVER PLANT:
+-- Atlantic Giant Pumpkin
+--
+-- HARVEST ORDER:
+-- Super -> Mythic -> Legendary -> Epic
+-- -> Rare -> Uncommon -> Common
+--
+-- PLOT LEVEL:
+-- berdasarkan PLOT MILIK LOCALPLAYER
 --
 -- INITIAL START DELAY:
 -- 60 DETIK
---
--- LEVEL 3:
--- - NO BUY COMMON
--- - NO BUY UNCOMMON
--- - NO PLANT COMMON
--- - NO PLANT UNCOMMON
--- - SHOVEL ALL COMMON + UNCOMMON
--- - RARE+ KEEP
 --==================================================
 
 
@@ -68,9 +100,7 @@ local Networking =
 --==================================================
 
 repeat
-
     task.wait()
-
 until Networking
     and Networking.SeedShop
     and Networking.Plant
@@ -303,53 +333,27 @@ local SPRINKLER_CONFIG = {
     SPRINKLER_OFFSETS = {
 
         ["Common Sprinkler"] =
-            Vector3.new(
-                2.5,
-                3,
-                0
-            ),
+            Vector3.new(2.5,3,0),
 
         ["Uncommon Sprinkler"] =
-            Vector3.new(
-                0.8,
-                3,
-                2.4
-            ),
+            Vector3.new(0.8,3,2.4),
 
         ["Rare Sprinkler"] =
-            Vector3.new(
-                -2,
-                3,
-                1.5
-            ),
+            Vector3.new(-2,3,1.5),
 
         ["Legendary Sprinkler"] =
-            Vector3.new(
-                -2,
-                3,
-                -1.5
-            ),
+            Vector3.new(-2,3,-1.5),
 
         ["Super Sprinkler"] =
-            Vector3.new(
-                0.8,
-                3,
-                -2.4
-            ),
+            Vector3.new(0.8,3,-2.4),
 
         ["Syrup Sprinkler"] =
-            Vector3.new(
-                -2,
-                3,
-                1.5
-            ),
+            Vector3.new(-2,3,1.5),
 
         ["Super Syrup Sprinkler"] =
-            Vector3.new(
-                -2,
-                3,
-                -1.5
-            ),
+            Vector3.new(-2,3,-1.5),
+
+        
 
     }
 
@@ -517,7 +521,6 @@ local MUTATION_REQUIRED_FRUITS = {
 --==================================================
 
 local NEVER_PLANT = {
-
     ["Atlantic Giant Pumpkin"] = true,
 
     -- Common
@@ -554,10 +557,7 @@ local NEVER_PLANT = {
     ["Maple Poison Apple"] = true,
     ["Maple Venom Spitter"] = true,
     ["Conifer Cone"] = true,
-
-    -- Super
     ["Amber Cranberry"] = true,
-
 }
 
 
@@ -617,10 +617,7 @@ local function GetMyPlot()
 
         local Plot =
             Gardens:FindFirstChild(
-                "Plot" ..
-                tostring(
-                    PlotId
-                )
+                "Plot" .. tostring(PlotId)
             )
 
         if Plot then
@@ -1008,9 +1005,7 @@ local function EquipShovel()
             Tool.Parent =
                 Character
 
-            task.wait(
-                0.1
-            )
+            task.wait(0.1)
 
             return Tool
 
@@ -1176,83 +1171,41 @@ end
 
 --==================================================
 -- BUY ALL SEEDS
---
--- LEVEL 3:
--- COMMON + UNCOMMON = SKIP
 --==================================================
 
 local function BuyAllSeeds()
-
-    local Plot =
-        GetMyPlot()
-
-    local Level =
-        GetPlotLevel(
-            Plot
-        )
-
 
     for _, SeedFrame in ipairs(
         NormalShop:GetChildren()
     ) do
 
-        if not SeedFrame:IsA("Frame") then
-            continue
-        end
+        if SeedFrame:IsA("Frame") then
 
-        local SeedName =
-            SeedFrame.Name
+            local SeedName =
+                SeedFrame.Name
 
+            local Stock =
+                GetStock(
+                    SeedFrame
+                )
 
-        local _,
-            RarityValue =
-            GetRarityFromSeedName(
-                SeedName
-            )
+            if Stock > 0 then
 
+                pcall(function()
 
-        --------------------------------------------------
-        -- LEVEL 3:
-        -- DON'T BUY COMMON
-        -- DON'T BUY UNCOMMON
-        --------------------------------------------------
+                    Networking.SeedShop
+                        .PurchaseSeed
+                        :Fire(
+                            SeedName
+                        )
 
-        if Level >= 3 then
+                end)
 
-            if RarityValue == 1
-                or RarityValue == 2 then
-
-                continue
+                task.wait(
+                    BUY_DELAY
+                )
 
             end
-
-        end
-
-
-        --------------------------------------------------
-        -- GET STOCK
-        --------------------------------------------------
-
-        local Stock =
-            GetStock(
-                SeedFrame
-            )
-
-        if Stock > 0 then
-
-            pcall(function()
-
-                Networking.SeedShop
-                    .PurchaseSeed
-                    :Fire(
-                        SeedName
-                    )
-
-            end)
-
-            task.wait(
-                BUY_DELAY
-            )
 
         end
 
@@ -1261,9 +1214,8 @@ local function BuyAllSeeds()
 end
 
 
-
 --==================================================
--- HARVEST TANPA KONFIRMASI
+-- HARVEST PROMPT
 --==================================================
 
 local function FireHarvestPrompt(Object)
@@ -1272,59 +1224,37 @@ local function FireHarvestPrompt(Object)
         return false
     end
 
-    --------------------------------------------------
-    -- PLANT ID
-    --------------------------------------------------
-
-    local PlantId =
-        Object:GetAttribute(
-            "PlantId"
+    local HarvestPart =
+        Object:FindFirstChild(
+            "HarvestPart"
         )
 
-    --------------------------------------------------
-    -- JIKA OBJECT ADALAH FRUIT
-    --------------------------------------------------
-
-    if not PlantId then
-
-        local Parent =
-            Object.Parent
-
-        if Parent then
-
-            PlantId =
-                Parent:GetAttribute(
-                    "PlantId"
-                )
-
-        end
-
-    end
-
-
-    if not PlantId then
+    if not HarvestPart then
         return false
     end
 
+    local HarvestPrompt =
+        HarvestPart:FindFirstChild(
+            "HarvestPrompt"
+        )
 
-    --------------------------------------------------
-    -- DIRECT HARVEST
-    -- TANPA PROXIMITY PROMPT
-    -- TANPA KONFIRMASI
-    --------------------------------------------------
+    if not HarvestPrompt
+        or not HarvestPrompt:IsA(
+            "ProximityPrompt"
+        ) then
+
+        return false
+
+    end
 
     local Success =
         pcall(function()
 
-            Networking.Garden
-                .CollectFruit
-                :Fire(
-                    PlantId,
-                    ""
-                )
+            fireproximityprompt(
+                HarvestPrompt
+            )
 
         end)
-
 
     if Success then
 
@@ -1336,11 +1266,9 @@ local function FireHarvestPrompt(Object)
 
     end
 
-
     return false
 
 end
-
 
 
 --==================================================
@@ -1478,66 +1406,21 @@ local function HarvestSpecialPlant(
 
     end
 
-
-    --------------------------------------------------
-    -- MAPLE MUSHROOM
-    --
-    -- TIDAK WAJIB MUTATION
-    --------------------------------------------------
-
-    if SeedName ==
-        "Maple Mushroom" then
-
-        print(
-            "[SPECIAL HARVEST]",
-            "Maple Mushroom"
+    local Mutation =
+        Plant:GetAttribute(
+            "Mutation"
         )
 
-        return FireHarvestPrompt(
-            Plant
-        )
-
+    if not Mutation then
+        return false
     end
-
-
-    --------------------------------------------------
-    -- MAPLE BAMBOO
-    --
-    -- WAJIB MUTATION
-    --------------------------------------------------
-
-    if SeedName ==
-        "Maple Bamboo" then
-
-        local Mutation =
-            Plant:GetAttribute(
-                "Mutation"
-            )
-
-        if not Mutation then
-
-            print(
-                "[SPECIAL SKIP]",
-                "Maple Bamboo",
-                "| Tidak ada Mutation"
-            )
-
-            return false
-
-        end
-
-    end
-
-
-    --------------------------------------------------
-    -- HARVEST
-    --------------------------------------------------
 
     return FireHarvestPrompt(
         Plant
     )
 
 end
+
 
 --==================================================
 -- HARVEST PLANT
@@ -1608,6 +1491,14 @@ local function HarvestPlant(Plant)
 
     --------------------------------------------------
     -- RARITY TERTINGGI -> TERENDAH
+    --
+    -- Super
+    -- Mythic
+    -- Legendary
+    -- Epic
+    -- Rare
+    -- Uncommon
+    -- Common
     --------------------------------------------------
 
     table.sort(
@@ -1627,6 +1518,10 @@ local function HarvestPlant(Plant)
 
             if ARarity ==
                 BRarity then
+
+                --------------------------------------------------
+                -- MUTATION DULU JIKA RARITY SAMA
+                --------------------------------------------------
 
                 local AMutation =
                     A:GetAttribute(
@@ -2918,42 +2813,6 @@ local function CanPlantSeed(
 
 
     --------------------------------------------------
-    -- GET CURRENT LEVEL
-    --------------------------------------------------
-
-    local Plot =
-        GetMyPlot()
-
-    local Level =
-        GetPlotLevel(
-            Plot
-        )
-
-
-    --------------------------------------------------
-    -- LEVEL 3:
-    -- NEVER PLANT COMMON + UNCOMMON
-    --------------------------------------------------
-
-    if Level >= 3 then
-
-        local _,
-            RarityValue =
-            GetRarityFromSeedName(
-                SeedName
-            )
-
-        if RarityValue == 1
-            or RarityValue == 2 then
-
-            return false
-
-        end
-
-    end
-
-
-    --------------------------------------------------
     -- SPECIAL:
     -- WAJIB ADA WEATHER
     --------------------------------------------------
@@ -3294,6 +3153,11 @@ local function SpecialPlantSequence(
             CountPlants()
 
 
+        --------------------------------------------------
+        -- KALAU PENUH, JANGAN FORCE PLANT DI SINI
+        -- SHOVEL PHASE AKAN MEMBERI RUANG
+        --------------------------------------------------
+
         if CurrentPlants >=
             MAX_PLANTS then
 
@@ -3391,264 +3255,14 @@ end
 
 --==================================================
 -- SHOVEL PHASE
---
--- LEVEL 3:
--- SHOVEL ALL COMMON + UNCOMMON
---
--- LEVEL 1/2:
--- ORIGINAL SMART REPLACE SYSTEM
 --==================================================
 
 local function ShovelPhase(
     ValidSeeds
 )
 
-    local Plot =
-        GetMyPlot()
-
-    if not Plot then
-        return
-    end
-
-
-    local Level =
-        GetPlotLevel(
-            Plot
-        )
-
-
     local CurrentPlants =
         CountPlants()
-
-
-    local MAX_PLANTS =
-        GetMaxPlants()
-
-
-    --------------------------------------------------
-    -- LEVEL 3
-    --
-    -- SETIAP SMARTPLANT:
-    -- SHOVEL SEMUA COMMON + UNCOMMON
-    --------------------------------------------------
-
-    if Level >= 3 then
-
-        print("")
-        print(
-            "========== LEVEL 3 SHOVEL =========="
-        )
-
-        print(
-            "Level 3 terdeteksi."
-        )
-
-        print(
-            "Target: SEMUA COMMON + UNCOMMON"
-        )
-
-        print(
-            "Plants:",
-            CurrentPlants,
-            "/",
-            MAX_PLANTS
-        )
-
-
-        local Shoveled = 0
-
-
-        --------------------------------------------------
-        -- COPY PLANT LIST
-        --
-        -- Supaya aman saat plant dihapus
-        --------------------------------------------------
-
-        local PlantList = {}
-
-
-        for _, Plant in ipairs(
-            GetPlants()
-        ) do
-
-            table.insert(
-                PlantList,
-                Plant
-            )
-
-        end
-
-
-        --------------------------------------------------
-        -- SHOVEL COMMON + UNCOMMON
-        --------------------------------------------------
-
-        for _, Plant in ipairs(
-            PlantList
-        ) do
-
-            if not Plant
-                or not Plant.Parent then
-
-                continue
-
-            end
-
-
-            local SeedName =
-                Plant:GetAttribute(
-                    "SeedName"
-                )
-
-            if not SeedName then
-                continue
-            end
-
-
-            local Rarity,
-                RarityValue =
-                GetRarityFromSeedName(
-                    SeedName
-                )
-
-
-            --------------------------------------------------
-            -- COMMON
-            --------------------------------------------------
-
-            if RarityValue ~= 1
-                and RarityValue ~= 2 then
-
-                continue
-
-            end
-
-
-            local BeforeCount =
-                CountPlants()
-
-
-            print(
-                "🔨 Level 3 Shovel:",
-                SeedName,
-                "|",
-                Rarity
-            )
-
-
-            local Success =
-                ShovelPlant(
-                    Plant
-                )
-
-
-            if not Success then
-
-                warn(
-                    "❌ Gagal shovel:",
-                    SeedName
-                )
-
-                continue
-
-            end
-
-
-            --------------------------------------------------
-            -- WAIT PLANT HILANG
-            --------------------------------------------------
-
-            local Start =
-                os.clock()
-
-
-            while os.clock()
-                - Start < 2 do
-
-                if CountPlants()
-                    < BeforeCount then
-
-                    break
-
-                end
-
-                task.wait(
-                    0.05
-                )
-
-            end
-
-
-            --------------------------------------------------
-            -- VERIFY
-            --------------------------------------------------
-
-            local AfterCount =
-                CountPlants()
-
-
-            if AfterCount <
-                BeforeCount then
-
-                Shoveled += 1
-
-                print(
-                    "✅ Shoveled:",
-                    SeedName,
-                    "| Total:",
-                    Shoveled,
-                    "| Plants:",
-                    AfterCount,
-                    "/",
-                    MAX_PLANTS
-                )
-
-            else
-
-                warn(
-                    "⚠️ Plant tidak berkurang:",
-                    SeedName
-                )
-
-            end
-
-
-            task.wait(
-                ACTION_DELAY
-            )
-
-        end
-
-
-        UnequipTool()
-
-
-        task.wait(
-            0.15
-        )
-
-
-        print(
-            "🔨 LEVEL 3 SHOVEL SELESAI:",
-            Shoveled,
-            "plant"
-        )
-
-        print(
-            "===================================="
-        )
-
-
-        return
-
-    end
-
-
-    --------------------------------------------------
-    -- LEVEL 1 / 2
-    --
-    -- ORIGINAL SYSTEM
-    --------------------------------------------------
 
     local TotalSeedCount = 0
 
@@ -3692,7 +3306,7 @@ local function ShovelPhase(
 
         --------------------------------------------------
         -- SPECIAL:
-        -- ONLY COUNT NEEDED
+        -- HANYA HITUNG YANG BENAR-BENAR DIBUTUHKAN
         --------------------------------------------------
 
         if IsSpecialSeed(
@@ -3728,12 +3342,12 @@ local function ShovelPhase(
 
 
     if TotalSeedCount <= 0 then
-
-        UnequipTool()
-
         return
-
     end
+
+
+    local MAX_PLANTS =
+        GetMaxPlants()
 
 
     local FreeSlots =
@@ -3759,12 +3373,16 @@ local function ShovelPhase(
 
     print(
         "Plot:",
-        Plot.Name
+        GetMyPlot()
+            and GetMyPlot().Name
+            or "NIL"
     )
 
     print(
         "Plot Level:",
-        Level
+        GetPlotLevel(
+            GetMyPlot()
+        )
     )
 
     print(
@@ -3807,13 +3425,12 @@ local function ShovelPhase(
 
 
         --------------------------------------------------
-        -- WEATHER
+        -- WEATHER BISA BERAKHIR
         --------------------------------------------------
 
         if not IsWeatherActive() then
 
             local HasSpecial = false
-
 
             for _, SeedData in ipairs(
                 ValidSeeds
@@ -3824,7 +3441,6 @@ local function ShovelPhase(
                 ) then
 
                     HasSpecial = true
-
                     break
 
                 end
@@ -3844,10 +3460,6 @@ local function ShovelPhase(
 
         end
 
-
-        --------------------------------------------------
-        -- FIND LOWEST REPLACEABLE
-        --------------------------------------------------
 
         local LowestPlant =
             FindLowestReplaceablePlant(
@@ -3958,7 +3570,6 @@ local function ShovelPhase(
 
     UnequipTool()
 
-
     task.wait(
         0.15
     )
@@ -3996,15 +3607,6 @@ local function PlantPhase()
     end
 
 
-    local Plot =
-        GetMyPlot()
-
-    local Level =
-        GetPlotLevel(
-            Plot
-        )
-
-
     local ValidSeeds = {}
 
 
@@ -4012,61 +3614,38 @@ local function PlantPhase()
         Seeds
     ) do
 
-        if SeedData.RarityValue <= 0 then
-            continue
-        end
+        if SeedData.RarityValue > 0
+            and not NEVER_PLANT[
+                SeedData.SeedName
+            ] then
 
+            --------------------------------------------------
+            -- SPECIAL:
+            -- ONLY WEATHER
+            --------------------------------------------------
 
-        if NEVER_PLANT[
-            SeedData.SeedName
-        ] then
+            if IsSpecialSeed(
+                SeedData.SeedName
+            ) then
 
-            continue
+                if IsWeatherActive() then
 
-        end
+                    table.insert(
+                        ValidSeeds,
+                        SeedData
+                    )
 
+                end
 
-        --------------------------------------------------
-        -- LEVEL 3:
-        -- DON'T PLANT COMMON + UNCOMMON
-        --------------------------------------------------
-
-        if Level >= 3 then
-
-            if SeedData.RarityValue == 1
-                or SeedData.RarityValue == 2 then
-
-                continue
-
-            end
-
-        end
-
-
-        --------------------------------------------------
-        -- SPECIAL:
-        -- ONLY WEATHER
-        --------------------------------------------------
-
-        if IsSpecialSeed(
-            SeedData.SeedName
-        ) then
-
-            if IsWeatherActive() then
+            else
 
                 table.insert(
                     ValidSeeds,
                     SeedData
+
                 )
 
             end
-
-        else
-
-            table.insert(
-                ValidSeeds,
-                SeedData
-            )
 
         end
 
@@ -4174,34 +3753,6 @@ local function PlantPhase()
 
         while true do
 
-            --------------------------------------------------
-            -- LEVEL 3 SAFETY CHECK
-            --
-            -- Prevent Common/Uncommon from being planted
-            -- even if level changes while loop berjalan.
-            --------------------------------------------------
-
-            local CurrentPlot =
-                GetMyPlot()
-
-            local CurrentLevel =
-                GetPlotLevel(
-                    CurrentPlot
-                )
-
-
-            if CurrentLevel >= 3 then
-
-                if SeedData.RarityValue == 1
-                    or SeedData.RarityValue == 2 then
-
-                    break
-
-                end
-
-            end
-
-
             local CurrentCount =
                 tonumber(
                     SeedData.Tool:
@@ -4278,7 +3829,6 @@ local function PlantPhase()
 
     UnequipTool()
 
-
     task.wait(
         0.15
     )
@@ -4306,15 +3856,6 @@ local function SmartPlant()
     end
 
 
-    local Plot =
-        GetMyPlot()
-
-    local Level =
-        GetPlotLevel(
-            Plot
-        )
-
-
     local ValidSeeds = {}
 
 
@@ -4322,47 +3863,30 @@ local function SmartPlant()
         Seeds
     ) do
 
-        if SeedData.RarityValue <= 0 then
-            continue
-        end
+        if SeedData.RarityValue > 0
+            and not NEVER_PLANT[
+                SeedData.SeedName
+            ] then
 
+            --------------------------------------------------
+            -- SPECIAL:
+            -- ONLY INCLUDE IF WEATHER ACTIVE
+            --------------------------------------------------
 
-        if NEVER_PLANT[
-            SeedData.SeedName
-        ] then
+            if IsSpecialSeed(
+                SeedData.SeedName
+            ) then
 
-            continue
+                if IsWeatherActive() then
 
-        end
+                    table.insert(
+                        ValidSeeds,
+                        SeedData
+                    )
 
+                end
 
-        --------------------------------------------------
-        -- LEVEL 3:
-        -- COMMON + UNCOMMON TIDAK MASUK VALID SEEDS
-        --------------------------------------------------
-
-        if Level >= 3 then
-
-            if SeedData.RarityValue == 1
-                or SeedData.RarityValue == 2 then
-
-                continue
-
-            end
-
-        end
-
-
-        --------------------------------------------------
-        -- SPECIAL:
-        -- ONLY INCLUDE IF WEATHER ACTIVE
-        --------------------------------------------------
-
-        if IsSpecialSeed(
-            SeedData.SeedName
-        ) then
-
-            if IsWeatherActive() then
+            else
 
                 table.insert(
                     ValidSeeds,
@@ -4371,53 +3895,28 @@ local function SmartPlant()
 
             end
 
-        else
-
-            table.insert(
-                ValidSeeds,
-                SeedData
-            )
-
         end
 
     end
 
 
-    --------------------------------------------------
-    -- LEVEL 3:
-    -- SHOVEL COMMON + UNCOMMON
-    --
-    -- Walaupun Common/Uncommon tidak ada di
-    -- ValidSeeds, ShovelPhase Level 3 memang
-    -- khusus mencari tanaman berdasarkan rarity.
-    --------------------------------------------------
-
-    if Level >= 3 then
-
-        ShovelPhase(
-            ValidSeeds
-        )
-
-    else
-
-        --------------------------------------------------
-        -- LEVEL 1 / 2:
-        -- ORIGINAL SHOVEL SYSTEM
-        --------------------------------------------------
-
-        if #ValidSeeds > 0 then
-
-            SortSeeds(
-                ValidSeeds
-            )
-
-            ShovelPhase(
-                ValidSeeds
-            )
-
-        end
-
+    if #ValidSeeds == 0 then
+        return
     end
+
+
+    SortSeeds(
+        ValidSeeds
+    )
+
+
+    --------------------------------------------------
+    -- SHOVEL
+    --------------------------------------------------
+
+    ShovelPhase(
+        ValidSeeds
+    )
 
 
     task.wait(
@@ -4651,7 +4150,7 @@ print(
 )
 
 print(
-    "          AUTO KAITUN V14"
+    "          AUTO KAITUN V13"
 )
 
 print(
@@ -4738,30 +4237,6 @@ print(
 
 print(
     "AUTO EXPAND: ON"
-)
-
-print(
-    "LEVEL 3: NO BUY COMMON"
-)
-
-print(
-    "LEVEL 3: NO BUY UNCOMMON"
-)
-
-print(
-    "LEVEL 3: NO PLANT COMMON"
-)
-
-print(
-    "LEVEL 3: NO PLANT UNCOMMON"
-)
-
-print(
-    "LEVEL 3: SHOVEL ALL COMMON + UNCOMMON"
-)
-
-print(
-    "LEVEL 3: RARE+ KEEP"
 )
 
 print(
@@ -4942,8 +4417,11 @@ end)
 -- MAIN LOOP
 --
 -- BUY
--- SMART SHOVEL
+-- SHOVEL
 -- PLANT
+--
+-- HARVEST / SELL / EXPAND
+-- INDEPENDENT
 --==================================================
 
 while task.wait(
