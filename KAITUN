@@ -1,5 +1,5 @@
 --==================================================
--- AUTO KAITUN V14
+-- AUTO KAITUN V15
 --
 -- INITIAL START DELAY:
 -- 60 DETIK
@@ -1261,8 +1261,9 @@ local function BuyAllSeeds()
 end
 
 
+
 --==================================================
--- HARVEST PROMPT
+-- HARVEST TANPA KONFIRMASI
 --==================================================
 
 local function FireHarvestPrompt(Object)
@@ -1271,37 +1272,59 @@ local function FireHarvestPrompt(Object)
         return false
     end
 
-    local HarvestPart =
-        Object:FindFirstChild(
-            "HarvestPart"
+    --------------------------------------------------
+    -- PLANT ID
+    --------------------------------------------------
+
+    local PlantId =
+        Object:GetAttribute(
+            "PlantId"
         )
 
-    if not HarvestPart then
+    --------------------------------------------------
+    -- JIKA OBJECT ADALAH FRUIT
+    --------------------------------------------------
+
+    if not PlantId then
+
+        local Parent =
+            Object.Parent
+
+        if Parent then
+
+            PlantId =
+                Parent:GetAttribute(
+                    "PlantId"
+                )
+
+        end
+
+    end
+
+
+    if not PlantId then
         return false
     end
 
-    local HarvestPrompt =
-        HarvestPart:FindFirstChild(
-            "HarvestPrompt"
-        )
 
-    if not HarvestPrompt
-        or not HarvestPrompt:IsA(
-            "ProximityPrompt"
-        ) then
-
-        return false
-
-    end
+    --------------------------------------------------
+    -- DIRECT HARVEST
+    -- TANPA PROXIMITY PROMPT
+    -- TANPA KONFIRMASI
+    --------------------------------------------------
 
     local Success =
         pcall(function()
 
-            fireproximityprompt(
-                HarvestPrompt
-            )
+            Networking.Garden
+                .CollectFruit
+                :Fire(
+                    PlantId,
+                    ""
+                )
 
         end)
+
 
     if Success then
 
@@ -1313,9 +1336,11 @@ local function FireHarvestPrompt(Object)
 
     end
 
+
     return false
 
 end
+
 
 
 --==================================================
