@@ -1,0 +1,299 @@
+
+-- AUTO DAILY DEAL -> SELL ALL
+--==================================================
+
+local Players =
+game:GetService("Players")
+
+local ReplicatedStorage =
+game:GetService("ReplicatedStorage")
+
+--==================================================
+-- PLAYER
+--==================================================
+
+local LocalPlayer =
+Players.LocalPlayer
+
+--==================================================
+-- NETWORKING
+--==================================================
+
+local Networking =
+require(
+    ReplicatedStorage
+        :WaitForChild("SharedModules")
+        :WaitForChild("Networking")
+)
+
+--==================================================
+-- CONFIG
+--==================================================
+
+local SELL_LOOP_DELAY = 2
+
+--==================================================
+-- WAIT NETWORKING
+--==================================================
+
+repeat
+    task.wait()
+until Networking
+    and Networking.NPCS
+    and Networking.NPCS.CheckDailyDeal
+    and Networking.NPCS.PreviewSellAll
+    and Networking.NPCS.UseDailyDealAll
+    and Networking.NPCS.SellAll
+
+--==================================================
+-- DAILY DEAL
+--==================================================
+
+local function TryDailyDeal()
+
+    --------------------------------------------------
+    -- CHECK DAILY DEAL
+    --------------------------------------------------
+
+    local CheckSuccess,
+        CheckResult =
+        pcall(function()
+
+            return Networking.NPCS
+                .CheckDailyDeal
+                :Fire()
+
+        end)
+
+    if not CheckSuccess then
+
+        warn(
+            "[DAILY DEAL] CheckDailyDeal error:",
+            CheckResult
+        )
+
+        return false
+    end
+
+    --------------------------------------------------
+    -- DAILY DEAL TIDAK TERSEDIA
+    --------------------------------------------------
+
+    if not CheckResult
+        or CheckResult.Available ~= true then
+
+        return false
+    end
+
+    --------------------------------------------------
+    -- PREVIEW FRUIT
+    --------------------------------------------------
+
+    local PreviewSuccess,
+        Preview =
+        pcall(function()
+
+            return Networking.NPCS
+                .PreviewSellAll
+                :Fire()
+
+        end)
+
+    if not PreviewSuccess then
+
+        warn(
+            "[DAILY DEAL] PreviewSellAll error:",
+            Preview
+        )
+
+        return true
+    end
+
+    if not Preview then
+        return true
+    end
+
+    local FruitCount =
+        tonumber(
+            Preview.FruitCount
+        ) or 0
+
+    --------------------------------------------------
+    -- TIDAK ADA FRUIT
+    --------------------------------------------------
+
+    if FruitCount <= 0 then
+        return true
+    end
+
+    --------------------------------------------------
+    -- USE DAILY DEAL ALL
+    --------------------------------------------------
+
+    local DealSuccess,
+        DealResult =
+        pcall(function()
+
+            return Networking.NPCS
+                .UseDailyDealAll
+                :Fire()
+
+        end)
+
+    if DealSuccess
+        and DealResult
+        and DealResult.Success then
+
+        print(
+            "[DAILY DEAL] SUCCESS | Sold:",
+            DealResult.SoldCount or FruitCount,
+            "| Price:",
+            DealResult.SellPrice or 0
+        )
+
+    else
+
+        warn(
+            "[DAILY DEAL] Failed:",
+            DealResult
+        )
+
+    end
+
+    -- Daily Deal tersedia, jadi jangan SellAll
+    return true
+end
+
+--==================================================
+-- SELL ALL
+--==================================================
+
+local function SellAll()
+
+    local Success,
+        Preview =
+        pcall(function()
+
+            return Networking.NPCS
+                .PreviewSellAll
+                :Fire()
+
+        end)
+
+    if not Success then
+
+        warn(
+            "[SELL ALL] PreviewSellAll error:",
+            Preview
+        )
+
+        return
+    end
+
+    if not Preview then
+        return
+    end
+
+    local FruitCount =
+        tonumber(
+            Preview.FruitCount
+        ) or 0
+
+    --------------------------------------------------
+    -- TIDAK ADA FRUIT
+    --------------------------------------------------
+
+    if FruitCount <= 0 then
+        return
+    end
+
+    --------------------------------------------------
+    -- SELL ALL
+    --------------------------------------------------
+
+    local SellSuccess,
+        SellResult =
+        pcall(function()
+
+            return Networking.NPCS
+                .SellAll
+                :Fire()
+
+        end)
+
+    if SellSuccess then
+
+        print(
+            "[SELL ALL] Sold:",
+            FruitCount,
+            "fruit"
+        )
+
+    else
+
+        warn(
+            "[SELL ALL] SellAll error:",
+            SellResult
+        )
+
+    end
+end
+
+--==================================================
+-- START
+--==================================================
+
+print("")
+print(
+    "======================================"
+)
+
+print(
+    "     AUTO DAILY DEAL -> SELL ALL"
+)
+
+print(
+    "======================================"
+)
+
+print(
+    "Sell Loop:",
+    SELL_LOOP_DELAY,
+    "seconds"
+)
+
+print(
+    "======================================"
+)
+
+--==================================================
+-- AUTO SELL LOOP
+--==================================================
+
+while task.wait(
+    SELL_LOOP_DELAY
+) do
+
+    pcall(function()
+
+        --------------------------------------------------
+        -- DAILY DEAL FIRST
+        --------------------------------------------------
+
+        local DailyDealHandled =
+            TryDailyDeal()
+
+        --------------------------------------------------
+        -- JIKA DAILY DEAL TIDAK ADA
+        -- BARU SELL ALL
+        --------------------------------------------------
+
+        if not DailyDealHandled then
+
+            SellAll()
+
+        end
+
+    end)
+
+end
