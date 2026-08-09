@@ -1,4 +1,8 @@
---BUY PET ONLY SIZE OR MUTATION
+--==================================================
+-- BUY PET ONLY SIZE OR MUTATION
+-- SHADOW DRAGON = ALWAYS BUY
+--==================================================
+
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -13,24 +17,35 @@ local Networking = require(
 
 local WildPetTame = Networking.Pets.WildPetTame
 
---------------------------------------------------
+--==================================================
 -- CONFIG
---------------------------------------------------
+--==================================================
 
 local TWEEN_SPEED = 30
 local BUY_DELAY = 0.1
 
---------------------------------------------------
+--==================================================
+-- PET YANG SELALU DIBELI
+-- TIDAK PERLU PetSize / PetType
+--==================================================
+
+local ALWAYS_BUY_PETS = {
+    ["Shadow Dragon"] = true,
+}
+
+--==================================================
 -- TWEEN KE PET
---------------------------------------------------
+--==================================================
 
 local function TweenToPet(pet)
     local character = LocalPlayer.Character
+
     if not character then
         return false
     end
 
     local root = character:FindFirstChild("HumanoidRootPart")
+
     if not root then
         return false
     end
@@ -39,12 +54,29 @@ local function TweenToPet(pet)
         return false
     end
 
+    if not pet:IsA("BasePart") then
+        return false
+    end
+
+    --------------------------------------------------
+    -- TARGET POSITION
+    --------------------------------------------------
+
     local targetPosition = pet.Position + Vector3.new(0, 3, 0)
+
     local distance = (root.Position - targetPosition).Magnitude
+
+    --------------------------------------------------
+    -- SUDAH DEKAT
+    --------------------------------------------------
 
     if distance < 3 then
         return true
     end
+
+    --------------------------------------------------
+    -- HITUNG DURASI TWEEN
+    --------------------------------------------------
 
     local duration = distance / TWEEN_SPEED
 
@@ -63,20 +95,68 @@ local function TweenToPet(pet)
     tween:Play()
     tween.Completed:Wait()
 
+    --------------------------------------------------
+    -- CEK LAGI
+    --------------------------------------------------
+
+    if not pet or not pet.Parent then
+        return false
+    end
+
     return true
 end
 
---------------------------------------------------
+--==================================================
+-- GET PET NAME
+--==================================================
+
+local function GetPetName(pet)
+    if not pet then
+        return nil
+    end
+
+    local petName = pet:GetAttribute("PetName")
+
+    if petName and petName ~= "" then
+        return petName
+    end
+
+    return pet.Name
+end
+
+--==================================================
 -- CEK PET
---------------------------------------------------
+--==================================================
 
 local function HasTargetAttribute(pet)
-    -- PetSize ADA
+
+    if not pet then
+        return false
+    end
+
+    --------------------------------------------------
+    -- GET NAME
+    --------------------------------------------------
+
+    local petName = GetPetName(pet)
+
+    --------------------------------------------------
+    -- ALWAYS BUY PET
+    --------------------------------------------------
+
+    if petName and ALWAYS_BUY_PETS[petName] then
+        return true
+    end
+
+    --------------------------------------------------
+    -- PET LAIN:
+    -- HARUS PUNYA PetSize ATAU PetType
+    --------------------------------------------------
+
     if pet:GetAttribute("PetSize") ~= nil then
         return true
     end
 
-    -- ATAU PetType ADA
     if pet:GetAttribute("PetType") ~= nil then
         return true
     end
@@ -84,32 +164,46 @@ local function HasTargetAttribute(pet)
     return false
 end
 
---------------------------------------------------
+--==================================================
 -- BUY PET
---------------------------------------------------
+--==================================================
 
 local function BuyPet(pet)
+
     if not pet or not pet.Parent then
         return
     end
+
+    --------------------------------------------------
+    -- HARUS BASEPART
+    --------------------------------------------------
 
     if not pet:IsA("BasePart") then
         return
     end
 
     --------------------------------------------------
-    -- HARUS PUNYA PetSize ATAU PetType
+    -- CEK TARGET
     --------------------------------------------------
 
     if not HasTargetAttribute(pet) then
         return
     end
 
-    local petName = pet:GetAttribute("PetName")
+    --------------------------------------------------
+    -- GET DATA
+    --------------------------------------------------
+
+    local petName = GetPetName(pet)
+
     local petSize = pet:GetAttribute("PetSize")
     local petType = pet:GetAttribute("PetType")
     local rarity = pet:GetAttribute("Rarity")
     local price = pet:GetAttribute("Price")
+
+    --------------------------------------------------
+    -- LOG
+    --------------------------------------------------
 
     print(
         "[TARGET PET]",
@@ -128,7 +222,11 @@ local function BuyPet(pet)
         return
     end
 
-    if not pet.Parent then
+    --------------------------------------------------
+    -- PET SUDAH HILANG
+    --------------------------------------------------
+
+    if not pet or not pet.Parent then
         return
     end
 
@@ -145,49 +243,80 @@ local function BuyPet(pet)
     task.wait(BUY_DELAY)
 end
 
---------------------------------------------------
+--==================================================
 -- SCAN SEMUA PET
---------------------------------------------------
+--==================================================
 
 local function ScanPets()
+
     local Map = workspace:FindFirstChild("Map")
+
     if not Map then
         return
     end
 
     local WildPetRef = Map:FindFirstChild("WildPetRef")
+
     if not WildPetRef then
         return
     end
 
+    --------------------------------------------------
+    -- SCAN SEMUA PET
+    --------------------------------------------------
+
     for _, pet in ipairs(WildPetRef:GetChildren()) do
+
         if pet:IsA("BasePart") then
             BuyPet(pet)
         end
+
     end
 end
 
---------------------------------------------------
+--==================================================
 -- INITIAL SCAN
---------------------------------------------------
+--==================================================
 
 task.spawn(function()
+
+    print("[BUY PET] Initial scan...")
+
     ScanPets()
+
 end)
 
---------------------------------------------------
+--==================================================
 -- PET BARU SPAWN
---------------------------------------------------
+--==================================================
 
 task.spawn(function()
+
     local Map = workspace:WaitForChild("Map")
     local WildPetRef = Map:WaitForChild("WildPetRef")
 
+    --------------------------------------------------
+    -- CHILD ADDED
+    --------------------------------------------------
+
     WildPetRef.ChildAdded:Connect(function(pet)
+
         task.wait(0.1)
 
         if pet:IsA("BasePart") then
             BuyPet(pet)
         end
+
     end)
+
 end)
+
+--==================================================
+-- DONE
+--==================================================
+
+print("========================================")
+print("[BUY PET] SCRIPT ACTIVE")
+print("[BUY PET] Shadow Dragon = ALWAYS BUY")
+print("[BUY PET] Others = PetSize OR PetType")
+print("========================================")
