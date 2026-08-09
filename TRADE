@@ -204,6 +204,11 @@ local NORMAL_ITEMS = {
 	},
 
 	{
+		Category = "Sprinklers",
+		ItemKey = "Syrup Sprinkler"
+	},
+
+	{
 		Category = "WateringCans",
 		ItemKey = "Super Syrup Watering Can"
 	},
