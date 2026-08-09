@@ -1,283 +1,45 @@
+--==================================================
+-- SERVICES
+--==================================================
+
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local ProximityPromptService = game:GetService("ProximityPromptService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+--==================================================
+-- PLAYER
+--==================================================
 
 local LocalPlayer = Players.LocalPlayer
-local Networking = require(ReplicatedStorage.SharedModules.Networking)
-
---------------------------------------------------
--- SKIP LOADING V2
--- BASED ON ReplicatedFirst.LoadingScreenController
---------------------------------------------------
-
-local RUNNING = true
+local Camera = workspace.CurrentCamera
 
 --==================================================
--- RESTORE CHARACTER
+-- NETWORKING
 --==================================================
 
-local function RestoreCharacter()
-    local Character = LocalPlayer.Character
-
-    if not Character then
-        return
-    end
-
-    local Root = Character:FindFirstChild("HumanoidRootPart")
-
-    if Root and Root:IsA("BasePart") then
-        Root.Anchored = false
-    end
-end
+local Networking =
+    require(ReplicatedStorage.SharedModules.Networking)
 
 --==================================================
--- RESTORE CAMERA
---==================================================
-
-local function RestoreCamera()
-    local Camera = workspace.CurrentCamera
-
-    if not Camera then
-        return
-    end
-
-    Camera.CameraType = Enum.CameraType.Custom
-    Camera.FieldOfView = 70
-end
-
---==================================================
--- RESTORE LIGHTING
---==================================================
-
-local function RestoreLighting()
-    local Lighting = game:GetService("Lighting")
-
-    local DepthOfField = Lighting:FindFirstChild("DepthOfField")
-
-    if DepthOfField then
-        DepthOfField.Enabled = true
-    end
-
-    local Blur = Lighting:FindFirstChild("Blur")
-
-    if Blur then
-        pcall(function()
-            Blur.Size = 0
-        end)
-    end
-end
-
---==================================================
--- REMOVE LOADING SCREEN
---==================================================
-
-local function RemoveLoadingScreen()
-
-    -- Workspace direct
-    local LoadingScreen = workspace:FindFirstChild("LoadingScreenMenu")
-
-    if LoadingScreen then
-        pcall(function()
-            LoadingScreen:Destroy()
-        end)
-    end
-
-    -- Workspace descendants
-    for _, Object in ipairs(workspace:GetDescendants()) do
-        if Object.Name == "LoadingScreenMenu" then
-            pcall(function()
-                Object:Destroy()
-            end)
-        end
-    end
-
-    -- PlayerGui
-    local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
-
-    if PlayerGui then
-        for _, Object in ipairs(PlayerGui:GetDescendants()) do
-            if Object.Name == "LoadingScreenMenu" then
-
-                pcall(function()
-                    if Object:IsA("ScreenGui") then
-                        Object.Enabled = false
-                    end
-                end)
-
-                pcall(function()
-                    Object:Destroy()
-                end)
-            end
-        end
-    end
-end
-
---==================================================
--- DISABLE LOADING STATE
---==================================================
-
-local function DisableLoadingState()
-
-    pcall(function()
-        LocalPlayer:SetAttribute("LoadingScreenCovering", false)
-    end)
-
-    pcall(function()
-        LocalPlayer:SetAttribute("LoadingScreenActive", false)
-    end)
-
-    pcall(function()
-        LocalPlayer:SetAttribute("LoadingScreenDone", true)
-    end)
-end
-
---==================================================
--- FORCE SKIP
---==================================================
-
-local function ForceSkip()
-
-    RemoveLoadingScreen()
-
-    RestoreCamera()
-    RestoreLighting()
-    RestoreCharacter()
-
-    pcall(function()
-        ProximityPromptService.Enabled = true
-    end)
-
-    DisableLoadingState()
-end
-
---==================================================
--- CHARACTER ADDED
---==================================================
-
-LocalPlayer.CharacterAdded:Connect(function(Character)
-
-    task.wait()
-
-    local Root = Character:FindFirstChild("HumanoidRootPart")
-
-    if Root then
-        Root.Anchored = false
-    end
-
-    if RUNNING then
-        task.defer(function()
-            RestoreCharacter()
-        end)
-    end
-end)
-
---==================================================
--- INITIAL SKIP
---==================================================
-
-task.spawn(function()
-
-    -- First attempt
-    ForceSkip()
-
-    -- Keep checking because LoadingScreenController
-    -- may recreate the loading screen
-    for i = 1, 40 do
-
-        if not RUNNING then
-            break
-        end
-
-        ForceSkip()
-
-        task.wait(0.05)
-    end
-
-end)
-
---==================================================
--- RENDER MONITOR
---==================================================
-
-local Connection
-
-Connection = RunService.RenderStepped:Connect(function()
-
-    if not RUNNING then
-
-        if Connection then
-            Connection:Disconnect()
-            Connection = nil
-        end
-
-        return
-    end
-
-    -- Restore camera
-    RestoreCamera()
-
-    -- Restore character
-    RestoreCharacter()
-
-    -- Enable prompts
-    pcall(function()
-        ProximityPromptService.Enabled = true
-    end)
-
-    -- Remove recreated loading screen
-    local LoadingScreen = workspace:FindFirstChild("LoadingScreenMenu")
-
-    if LoadingScreen then
-        pcall(function()
-            LoadingScreen:Destroy()
-        end)
-    end
-
-end)
-
---==================================================
--- STOP SKIP LOADING MONITOR
---==================================================
-
-task.spawn(function()
-
-    task.wait(15)
-
-    RUNNING = false
-
-    if Connection then
-        Connection:Disconnect()
-        Connection = nil
-    end
-
-    -- Final restore
-    ForceSkip()
-
-    print("[SkipLoading V2] Finished")
-
-end)
-
-print("[SkipLoading V2] Active")
-
---------------------------------------------------
 -- SKIP TUTORIAL SETELAH 60 DETIK
---------------------------------------------------
+--==================================================
 
 task.spawn(function()
 
     task.wait(60)
 
     pcall(function()
+
         Networking.Tutorial.Complete:Fire()
-        print("[Tutorial] Complete")
+
     end)
 
 end)
 
---------------------------------------------------
--- ANTI AFK + TELEPORT TO GARDEN
---------------------------------------------------
+--==================================================
+-- ANTI AFK
+-- JUMP SETIAP 30 DETIK
+--==================================================
 
 task.spawn(function()
 
@@ -285,23 +47,76 @@ task.spawn(function()
 
         pcall(function()
 
-            local Character = LocalPlayer.Character
-            local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+            local Character =
+                LocalPlayer.Character
 
-            if Humanoid and Humanoid.Health > 0 then
+            local Humanoid =
+                Character
+                and Character:FindFirstChildOfClass("Humanoid")
 
-                -- Jump untuk aktivitas
+            if Humanoid
+                and Humanoid.Health > 0
+            then
+
                 Humanoid:ChangeState(
                     Enum.HumanoidStateType.Jumping
                 )
 
-                -- Tunggu sebentar
-                task.wait(0.5)
-
-                -- Teleport ke Garden
-                Networking.TeleportButton.Request:Fire("Garden")
-
             end
+
+        end)
+
+    end
+
+end)
+
+--==================================================
+-- ANTI AFK
+-- KLIK TENGAH LAYAR SETIAP 30 DETIK
+--==================================================
+
+task.spawn(function()
+
+    while task.wait(30) do
+
+        pcall(function()
+
+            Camera = workspace.CurrentCamera
+
+            if not Camera then
+                return
+            end
+
+            local Viewport =
+                Camera.ViewportSize
+
+            local X =
+                math.floor(Viewport.X / 2)
+
+            local Y =
+                math.floor(Viewport.Y / 2)
+
+            -- Mouse Down
+            VirtualInputManager:SendMouseButtonEvent(
+                X,
+                Y,
+                0,
+                true,
+                game,
+                0
+            )
+
+            task.wait(0.05)
+
+            -- Mouse Up
+            VirtualInputManager:SendMouseButtonEvent(
+                X,
+                Y,
+                0,
+                false,
+                game,
+                0
+            )
 
         end)
 
