@@ -1,0 +1,206 @@
+--==================================================
+-- AUTO BUY ALL SEED
+--==================================================
+
+--==================================================
+-- SERVICES
+--==================================================
+
+local Players =
+    game:GetService("Players")
+
+local ReplicatedStorage =
+    game:GetService("ReplicatedStorage")
+
+--==================================================
+-- PLAYER
+--==================================================
+
+local LocalPlayer =
+    Players.LocalPlayer
+
+--==================================================
+-- NETWORKING
+--==================================================
+
+local SharedModules =
+    ReplicatedStorage:WaitForChild(
+        "SharedModules"
+    )
+
+local Networking =
+    require(
+        SharedModules:WaitForChild(
+            "Networking"
+        )
+    )
+
+--==================================================
+-- WAIT NETWORKING
+--==================================================
+
+repeat
+    task.wait()
+until
+    Networking
+    and Networking.SeedShop
+    and Networking.SeedShop.PurchaseSeed
+
+--==================================================
+-- CONFIG
+--==================================================
+
+local BUY_DELAY = 0.05
+local LOOP_DELAY = 2
+
+--==================================================
+-- SEED SHOP
+--==================================================
+
+local SeedShop =
+    LocalPlayer.PlayerGui:
+        WaitForChild(
+            "SeedShop"
+        )
+
+local NormalShop =
+    SeedShop.Frame:
+        WaitForChild(
+            "NormalShop"
+        )
+
+--==================================================
+-- GET STOCK
+--==================================================
+
+local function GetStock(SeedFrame)
+
+    if not SeedFrame then
+        return 0
+    end
+
+    local MainFrame =
+        SeedFrame:FindFirstChild(
+            "Main_Frame"
+        )
+
+    if not MainFrame then
+        return 0
+    end
+
+    local StockText =
+        MainFrame:FindFirstChild(
+            "Stock_Text"
+        )
+
+    if not StockText then
+        return 0
+    end
+
+    local StockAmount =
+        tonumber(
+            string.match(
+                StockText.Text,
+                "x(%d+)"
+            )
+        )
+
+    return StockAmount or 0
+end
+
+--==================================================
+-- BUY ALL SEEDS
+--==================================================
+
+local function BuyAllSeeds()
+
+    for _, SeedFrame in ipairs(
+        NormalShop:GetChildren()
+    ) do
+
+        if not SeedFrame:IsA("Frame") then
+            continue
+        end
+
+        local SeedName =
+            SeedFrame.Name
+
+        local Stock =
+            GetStock(
+                SeedFrame
+            )
+
+        if Stock > 0 then
+
+            local Success,
+                ErrorMessage =
+                pcall(function()
+
+                    Networking.SeedShop
+                        .PurchaseSeed
+                        :Fire(
+                            SeedName
+                        )
+
+                end)
+
+            if Success then
+
+                print(
+                    "[BUY SEED]",
+                    SeedName,
+                    "| Stock:",
+                    Stock
+                )
+
+            else
+
+                warn(
+                    "[BUY SEED ERROR]",
+                    SeedName,
+                    ErrorMessage
+                )
+
+            end
+
+            task.wait(
+                BUY_DELAY
+            )
+
+        end
+
+    end
+
+end
+
+--==================================================
+-- START
+--==================================================
+
+print(
+    "======================================"
+)
+
+print(
+    "       AUTO BUY ALL SEED"
+)
+
+print(
+    "======================================"
+)
+
+--==================================================
+-- MAIN LOOP
+--==================================================
+
+while task.wait(
+    LOOP_DELAY
+) do
+
+    pcall(function()
+
+        BuyAllSeeds()
+
+    end)
+
+end
