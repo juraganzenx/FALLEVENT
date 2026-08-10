@@ -12,7 +12,7 @@ local BuyList = {
     -- Magic Mail
 
     -- Other Gear
-    "HHHHHHarp",
+    "Harp",
 }
 
 while task.wait(2) do
