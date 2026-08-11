@@ -194,8 +194,8 @@ local NORMAL_ITEMS = {
 	--------------------------------------------------
 
 	{
-		Category = "Gear",
-		ItemKey = "HHHHarp"
+		Category = "Gears",
+		ItemKey = "Harp"
 	},
 
 	{
