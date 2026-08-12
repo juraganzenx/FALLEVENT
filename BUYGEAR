@@ -15,7 +15,7 @@ local BuyList = {
     "Harp",
 }
 
-while task.wait(2) do
+while task.wait(0.5) do
     for i = 1, #BuyList do
         Networking.GearShop.PurchaseGear:Fire(BuyList[i])
     end
